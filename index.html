@@ -3124,7 +3124,10 @@ async function gFetchAll(){
     const lmr=await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`);
     if(!lmr.ok)throw 0;
     const sm=await lmr.json();
-    if(sm && sm===gLocalMod){gSetSS('ok');gUpdBadge();return;}
+    // Agar lastMod same hai aur aaj ke passes pehle se load hain toh skip
+    const _todayCheck=gTodayStr();
+    const _todayLoaded=GS.passes.filter(p=>p.date===_todayCheck).length;
+    if(sm && sm===gLocalMod && _todayLoaded>0){gSetSS('ok');gUpdBadge();return;}
 
     // Step 2: lastMod badla — buses + students fetch karo (chhote hain)
     const [bR,sR]=await Promise.all([
@@ -3134,34 +3137,55 @@ async function gFetchAll(){
     if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
     if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
 
-    // Step 3: Passes — incremental agar gSyncTs hai, warna pehli baar full fetch
+    // Step 3: Passes — incremental fetch (_ts > gSyncTs) for bandwidth saving,
+    //          Firebase index error pe automatically full fetch fallback
     const today=gTodayStr();
+    const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
+
+    async function gMergePassesFromFirebase(todayFromFirebase){
+      todayFromFirebase.forEach(np=>{
+        const idx=GS.passes.findIndex(x=>x.id===np.id);
+        if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np}; // update existing (gateOutTime etc)
+        else GS.passes.push(np);                               // naya pass add karo
+      });
+      // Passes jo Firebase pe nahi hain (delete ho gaye) unhe local se bhi hatao
+      const fbIds=new Set(todayFromFirebase.map(p=>p.id));
+      GS.passes=GS.passes.filter(p=>p.date!==today||fbIds.has(p.id));
+      gSyncTs=GS.passes.reduce((m,p)=>Math.max(m,p._ts||0),0)||Date.now();
+    }
+
+    async function gFullFetch(){
+      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json`);
+      if(!pr.ok) return;
+      const raw=await pr.json();
+      if(raw&&raw.error) throw new Error('Firebase: '+raw.error);
+      await gMergePassesFromFirebase(toArr(raw).filter(p=>p&&p.id&&p.date===today));
+    }
+
     if(gSyncTs>0){
-      // Sirf wahi passes jo last sync ke baad create/update hue (_ts > gSyncTs)
-      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy=_ts&startAt=${gSyncTs+1}`);
+      // Bandwidth-efficient: sirf naye/updated passes fetch karo
+      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="_ts"&startAt=${gSyncTs+1}`);
       if(pr.ok){
         const raw=await pr.json();
-        if(raw && typeof raw==='object'){
+        if(raw&&raw.error){
+          // Firebase mein _ts index nahi hai — full fetch fallback + user ko hint
+          console.warn('eGateSys: Firebase _ts index missing, falling back to full fetch. Add ".indexOn":["_ts"] in DB rules for bandwidth saving.');
+          gSyncTs=0; // reset so next cycle mein bhi try kare
+          await gFullFetch();
+        } else if(raw && typeof raw==='object'){
           const newPasses=Object.values(raw).filter(p=>p&&p.id&&p.date===today);
           newPasses.forEach(np=>{
             const idx=GS.passes.findIndex(x=>x.id===np.id);
-            if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np}; // update (gate-out etc)
-            else GS.passes.push(np);                               // naya pass
+            if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
+            else GS.passes.push(np);
           });
           const maxTs=newPasses.reduce((m,p)=>Math.max(m,p._ts||0),gSyncTs);
-          if(maxTs>gSyncTs)gSyncTs=maxTs;
+          if(maxTs>gSyncTs) gSyncTs=maxTs;
         }
       }
     } else {
-      // Pehli baar — full passes fetch, aaj ke rakho
-      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json`);
-      if(pr.ok){
-        const raw=await pr.json();
-        const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
-        const all=toArr(raw);
-        GS.passes=all.filter(p=>p&&p.date===today);
-        gSyncTs=GS.passes.reduce((m,p)=>Math.max(m,p._ts||0),0)||Date.now();
-      }
+      // Pehli baar ya reset ke baad — full fetch
+      await gFullFetch();
     }
 
     gLocalMod=sm||0;
