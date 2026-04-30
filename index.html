@@ -3087,8 +3087,6 @@ const GS = { students:[], passes:[], buses:[], lastMod:0 };
 let gLocalMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
 // gSyncTs — max _ts of passes, incremental fetch ke liye
 let gSyncTs=parseInt(localStorage.getItem('gp_sync_ts')||'0',10)||0;
-// gConfigMod — buses/students ka last fetched version; sirf tab refetch hoga jab config change ho
-let gConfigMod=parseInt(localStorage.getItem('gp_config_mod')||'0',10)||0;
 let gCfg={url:'',code:''}, gSyncIv=null, gFilter='ALL', gOpenCards={};
 const G_PASS='mahajan';
 
@@ -3113,9 +3111,8 @@ function gSaveLocal(){
     localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:GS.passes,buses:GS.buses}));
     localStorage.setItem('gp_local_mod',String(gLocalMod));
     localStorage.setItem('gp_sync_ts',String(gSyncTs));
-    localStorage.setItem('gp_config_mod',String(gConfigMod));
   }catch(e){
-    try{localStorage.setItem('gp_local_mod',String(gLocalMod));localStorage.setItem('gp_sync_ts',String(gSyncTs));localStorage.setItem('gp_config_mod',String(gConfigMod));}catch(e2){}
+    try{localStorage.setItem('gp_local_mod',String(gLocalMod));localStorage.setItem('gp_sync_ts',String(gSyncTs));}catch(e2){}
   }
 }
 
@@ -3123,38 +3120,22 @@ async function gFetchAll(){
   if(!gCfg.url||!gCfg.code)return;
   gSetSS('ing');
   try{
-    // Step 1: lastMod + configMod dono parallel mein (~20 bytes each) — lightweight check
-    const [lmr,cmr]=await Promise.all([
-      fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`),
-      fetch(`${gCfg.url}/${gCfg.code}/configMod.json`)
-    ]);
+    // Step 1: lastMod check (~20 bytes) — agar same hai toh kuch nahi karo
+    const lmr=await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`);
     if(!lmr.ok)throw 0;
     const sm=await lmr.json();
-    const cm=cmr.ok?(await cmr.json()||0):0;
     // Agar lastMod same hai aur aaj ke passes pehle se load hain toh skip
     const _todayCheck=gTodayStr();
     const _todayLoaded=GS.passes.filter(p=>p.date===_todayCheck).length;
     if(sm && sm===gLocalMod && _todayLoaded>0){gSetSS('ok');gUpdBadge();return;}
 
-    // Step 2: buses + students sirf tab fetch karo jab configMod badla ho
-    //         Pass add/update hone par configMod nahi badlega — bandwidth save!
-    if(cm && cm!==gConfigMod){
-      const [bR,sR]=await Promise.all([
-        fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
-        fetch(`${gCfg.url}/${gCfg.code}/students.json`)
-      ]);
-      if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
-      if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
-      gConfigMod=cm;
-    } else if(!cm && gConfigMod===0){
-      // Pehli baar / purana Firebase jisme configMod nahi hai — ek baar fetch karo
-      const [bR,sR]=await Promise.all([
-        fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
-        fetch(`${gCfg.url}/${gCfg.code}/students.json`)
-      ]);
-      if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
-      if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
-    }
+    // Step 2: lastMod badla — buses + students fetch karo (chhote hain)
+    const [bR,sR]=await Promise.all([
+      fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
+      fetch(`${gCfg.url}/${gCfg.code}/students.json`)
+    ]);
+    if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
+    if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
 
     // Step 3: Passes — incremental fetch (_ts > gSyncTs) for bandwidth saving,
     //          Firebase index error pe automatically full fetch fallback
@@ -3227,15 +3208,7 @@ async function gPush(k){
   gSaveLocal();if(!gCfg.url||!gCfg.code)return;
   GS.lastMod=Date.now();gLocalMod=GS.lastMod;gSetSS('ing');
   const val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
-  // buses ya students change hone par configMod bhi update karo
-  // taaki doosre devices sirf tab re-fetch karen jab config actually change hua ho
-  const patch={[k]:val,lastMod:GS.lastMod};
-  if(k==='buses'||k==='students'){
-    gConfigMod=GS.lastMod;
-    localStorage.setItem('gp_config_mod',String(gConfigMod));
-    patch.configMod=gConfigMod;
-  }
-  try{await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});gSetSS('ok');}catch{gSetSS('err');}
+  try{await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});gSetSS('ok');}catch{gSetSS('err');}
 }
 function gSetSS(st){
   const b=document.getElementById('g-sbar'),d=document.getElementById('g-sdot'),
@@ -3704,8 +3677,8 @@ function gImportCfg(){
 function gDisconnect(){
   if(!confirm('Disconnect Firebase?'))return;
   localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');
-  localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');localStorage.removeItem('gp_config_mod');
-  gCfg={url:'',code:''};gLocalMod=0;gSyncTs=0;gConfigMod=0;if(gSyncIv)clearInterval(gSyncIv);
+  localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');
+  gCfg={url:'',code:''};gLocalMod=0;gSyncTs=0;if(gSyncIv)clearInterval(gSyncIv);
   gSetSS('off');gLoadCfgF();gToast('✕ Disconnected','inf');
 }
 function gCfgSt(m,c){const el=document.getElementById('g-cfg-status');el.textContent=m;el.style.color=c;}
@@ -3797,8 +3770,8 @@ function gClearBusTally(){
 }
 function gClearGatepass(){
   if(!confirm('Clear cached GatePass data from this browser? Firebase is not affected.'))return;
-  localStorage.removeItem('gp_local');localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');localStorage.removeItem('gp_config_mod');
-  gLocalMod=0;gSyncTs=0;gConfigMod=0;GS.students=[];GS.passes=[];GS.buses=[];
+  localStorage.removeItem('gp_local');localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');
+  gLocalMod=0;gSyncTs=0;GS.students=[];GS.passes=[];GS.buses=[];
   gRenderPasses();gRenderBuses();
   gToast('🚪 GatePass cache cleared','inf');
 }
