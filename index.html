@@ -3122,15 +3122,17 @@ async function gFetchAll(){
     const today=gTodayStr();
     const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
 
-    // Step 1: lastMod + aaj ke passes ka COUNT ek saath fetch karo (shallow=true = sirf keys, data nahi)
+    // Step 1: lastMod + aaj ke passes ka COUNT ek saath fetch karo
+    // ✅ FIX: shallow=true aur orderBy Firebase RTDB mein compatible nahi hain —
+    // shallow hata diya; ab direct filtered query se count milega (correct data)
     const [lmr, cntR] = await Promise.all([
       fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`),
-      fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="date"&equalTo="${today}"&shallow=true`)
+      fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="date"&equalTo="${today}"`)
     ]);
     if(!lmr.ok) throw 0;
     const sm = await lmr.json();
 
-    // Firebase pe aaj ke passes ka count (shallow = sirf keys return karta hai)
+    // Firebase pe aaj ke passes ka count
     let fbTodayCount = -1;
     if(cntR.ok){
       const cntData = await cntR.json();
@@ -3164,7 +3166,7 @@ async function gFetchAll(){
 
     // Step 3: Passes fetch
 
-    async function gMergePassesFromFirebase(todayFromFirebase){
+    function gMergePassesFromFirebase(todayFromFirebase){
       todayFromFirebase.forEach(np=>{
         const idx=GS.passes.findIndex(x=>x.id===np.id);
         if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
@@ -3181,14 +3183,22 @@ async function gFetchAll(){
       if(!pr.ok) return;
       const raw=await pr.json();
       if(raw&&raw.error) throw new Error('Firebase: '+raw.error);
-      await gMergePassesFromFirebase(toArr(raw).filter(p=>p&&p.id&&p.date===today));
+      gMergePassesFromFirebase(toArr(raw).filter(p=>p&&p.id&&p.date===today));
     }
 
-    // Count mismatch pe hamesha full fetch — incremental pe trust nahi
-    if(countMismatch || gSyncTs===0){
-      await gFullFetch();
+    // ✅ FIX: lastMod change pe bhi full fetch — sirf incremental pe rely nahi karte
+    // Warna: eAcademics ki passes (lastMod change + _ts purana) miss ho jaati thi
+    const lastModChanged = sm !== gLocalMod;
+    if(countMismatch || gSyncTs===0 || lastModChanged){
+      // countMismatch case mein already cntData mein aaj ki passes hain — reuse karo
+      if(countMismatch && cntR.ok){
+        // cntR already consumed hai (json() already called), full fetch se fresh data lo
+        await gFullFetch();
+      } else {
+        await gFullFetch();
+      }
     } else {
-      // Incremental: sirf naye/updated passes (_ts > gSyncTs)
+      // Incremental: sirf naye/updated passes (_ts > gSyncTs) — missing photos ke liye
       const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="_ts"&startAt=${gSyncTs+1}`);
       if(pr.ok){
         const raw=await pr.json();
@@ -3228,9 +3238,18 @@ function gUpdBadge(){
 }
 async function gPush(k){
   gSaveLocal();if(!gCfg.url||!gCfg.code)return;
-  GS.lastMod=Date.now();gLocalMod=GS.lastMod;gSetSS('ing');
+  GS.lastMod=Date.now();
+  // ✅ FIX: gLocalMod update nahi karte here — taaki next poll mein Firebase se
+  // fresh lastMod compare ho aur eAcademics ki concurrent passes miss na hon.
+  // gLocalMod sirf successful gFetchAll ke baad update hoga.
+  gSetSS('ing');
   const val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
-  try{await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});gSetSS('ok');}catch{gSetSS('err');}
+  try{
+    await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
+    gSetSS('ok');
+    // Push ke baad turant ek fresh fetch — concurrent passes pick up ho jaati hain
+    setTimeout(gFetchAll,800);
+  }catch{gSetSS('err');}
 }
 function gSetSS(st){
   const b=document.getElementById('g-sbar'),d=document.getElementById('g-sdot'),
