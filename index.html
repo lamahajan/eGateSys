@@ -3107,7 +3107,14 @@ function gLoadLocal(){
 }
 function gSaveLocal(){
   try{
-    localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:GS.passes,buses:GS.buses}));
+    // pickerPhoto (base64) localStorage mein save nahi karein — 5MB limit bachao
+    // Firebase se har baar fresh fetch hogi, lekin passes list save rahegi
+    const passesForStorage = GS.passes.map(p => {
+      if(!p.pickerPhoto) return p;
+      const {pickerPhoto, ...rest} = p;
+      return {...rest, _hasPhoto: true}; // flag: photo Firebase mein hai, reload pe fetch hogi
+    });
+    localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:passesForStorage,buses:GS.buses}));
     localStorage.setItem('gp_local_mod',String(gLocalMod));
     localStorage.setItem('gp_sync_ts',String(gSyncTs));
   }catch(e){
@@ -3119,16 +3126,42 @@ async function gFetchAll(){
   if(!gCfg.url||!gCfg.code)return;
   gSetSS('ing');
   try{
-    // Step 1: lastMod check (~20 bytes) — agar same hai toh kuch nahi karo
-    const lmr=await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`);
-    if(!lmr.ok)throw 0;
-    const sm=await lmr.json();
-    // Agar lastMod same hai aur aaj ke passes pehle se load hain toh skip
-    const _todayCheck=gTodayStr();
-    const _todayLoaded=GS.passes.filter(p=>p.date===_todayCheck).length;
-    if(sm && sm===gLocalMod && _todayLoaded>0){gSetSS('ok');gUpdBadge();return;}
+    const today=gTodayStr();
+    const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
 
-    // Step 2: lastMod badla — buses + students fetch karo (chhote hain)
+    // Step 1: lastMod + aaj ke passes ka COUNT ek saath fetch karo (shallow=true = sirf keys, data nahi)
+    const [lmr, cntR] = await Promise.all([
+      fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`),
+      fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="date"&equalTo="${today}"&shallow=true`)
+    ]);
+    if(!lmr.ok) throw 0;
+    const sm = await lmr.json();
+
+    // Firebase pe aaj ke passes ka count (shallow = sirf keys return karta hai)
+    let fbTodayCount = -1;
+    if(cntR.ok){
+      const cntData = await cntR.json();
+      fbTodayCount = (cntData && typeof cntData==='object' && !cntData.error)
+        ? Object.keys(cntData).length : -1;
+    }
+
+    const localTodayCount = GS.passes.filter(p=>p.date===today).length;
+    const _missingPhotos  = GS.passes.filter(p=>p.date===today&&p._hasPhoto&&!p.pickerPhoto).length;
+
+    // COUNT RECONCILIATION — yahi tha asli bug
+    // lastMod same ho tab bhi agar Firebase count != local count → force full refetch
+    const countMismatch = fbTodayCount >= 0 && fbTodayCount !== localTodayCount;
+    const needsRefresh  = countMismatch || _missingPhotos > 0 || sm !== gLocalMod || localTodayCount === 0;
+
+    if(!needsRefresh){
+      gSetSS('ok'); gUpdBadge(); return;
+    }
+
+    if(countMismatch){
+      console.info(`eGateSys: Pass count mismatch — Firebase: ${fbTodayCount}, Local: ${localTodayCount}. Force full refetch.`);
+    }
+
+    // Step 2: buses + students fetch karo
     const [bR,sR]=await Promise.all([
       fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
       fetch(`${gCfg.url}/${gCfg.code}/students.json`)
@@ -3136,18 +3169,15 @@ async function gFetchAll(){
     if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
     if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
 
-    // Step 3: Passes — incremental fetch (_ts > gSyncTs) for bandwidth saving,
-    //          Firebase index error pe automatically full fetch fallback
-    const today=gTodayStr();
-    const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
+    // Step 3: Passes fetch
 
     async function gMergePassesFromFirebase(todayFromFirebase){
       todayFromFirebase.forEach(np=>{
         const idx=GS.passes.findIndex(x=>x.id===np.id);
-        if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np}; // update existing (gateOutTime etc)
-        else GS.passes.push(np);                               // naya pass add karo
+        if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
+        else GS.passes.push(np);
       });
-      // Passes jo Firebase pe nahi hain (delete ho gaye) unhe local se bhi hatao
+      // Firebase pe nahi hain (delete ho gaye) — local se bhi hatao
       const fbIds=new Set(todayFromFirebase.map(p=>p.id));
       GS.passes=GS.passes.filter(p=>p.date!==today||fbIds.has(p.id));
       gSyncTs=GS.passes.reduce((m,p)=>Math.max(m,p._ts||0),0)||Date.now();
@@ -3161,15 +3191,18 @@ async function gFetchAll(){
       await gMergePassesFromFirebase(toArr(raw).filter(p=>p&&p.id&&p.date===today));
     }
 
-    if(gSyncTs>0){
-      // Bandwidth-efficient: sirf naye/updated passes fetch karo
+    // Count mismatch pe hamesha full fetch — incremental pe trust nahi
+    if(countMismatch || gSyncTs===0){
+      await gFullFetch();
+    } else {
+      // Incremental: sirf naye/updated passes (_ts > gSyncTs)
       const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="_ts"&startAt=${gSyncTs+1}`);
       if(pr.ok){
         const raw=await pr.json();
         if(raw&&raw.error){
-          // Firebase mein _ts index nahi hai — full fetch fallback + user ko hint
+          // _ts index nahi hai Firebase mein — full fetch fallback
           console.warn('eGateSys: Firebase _ts index missing, falling back to full fetch. Add ".indexOn":["_ts"] in DB rules for bandwidth saving.');
-          gSyncTs=0; // reset so next cycle mein bhi try kare
+          gSyncTs=0;
           await gFullFetch();
         } else if(raw && typeof raw==='object'){
           const newPasses=Object.values(raw).filter(p=>p&&p.id&&p.date===today);
@@ -3182,9 +3215,6 @@ async function gFetchAll(){
           if(maxTs>gSyncTs) gSyncTs=maxTs;
         }
       }
-    } else {
-      // Pehli baar ya reset ke baad — full fetch
-      await gFullFetch();
     }
 
     gLocalMod=sm||0;
@@ -3224,7 +3254,10 @@ function gStartSync(){gSetSS('ing');gFetchAll();if(gSyncIv)clearInterval(gSyncIv
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&gCfg.url&&gCfg.code)gFetchAll();
 });
-function gTodayStr(){return new Date().toISOString().split('T')[0];}
+function gTodayStr(){
+  // IST (Asia/Kolkata) mein aaj ki date — UTC se galat date na aaye
+  return new Date().toLocaleDateString('en-CA', {timeZone:'Asia/Kolkata'});
+}
 function gNowT(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});}
 function gE(s){if(!s)return '';return String(s).replace(/&/g,'\x26amp;').replace(/</g,'\x26lt;').replace(/>/g,'\x26gt;').replace(/"/g,'\x26quot;');}
 
@@ -3264,8 +3297,8 @@ function gRenderPasses(){
   document.getElementById('g-tbadge').textContent=all.length+' today';
   document.getElementById('g-gcnt').textContent=`Total: ${all.length}  ·  Out: ${outCnt}  ·  Pending: ${all.length-outCnt}`;
   const filtered=all;
-  const pending=filtered.filter(p=>!p.gateOutTime);
-  const done=filtered.filter(p=>!!p.gateOutTime);
+  const pending=filtered.filter(p=>!p.gateOutTime).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const done=filtered.filter(p=>!!p.gateOutTime).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
   if(pending.length){
     let ph=`<div class="sdiv"><span class="slbl" style="color:var(--amber)">${_t('js_to_be_out')}</span><div class="sline" style="background:var(--amber)"></div><span class="scnt">${pending.length}</span></div>`;
@@ -6775,7 +6808,7 @@ let BT_DATA = { buses:[], parent:{morning:0, evening:0}, date:'' };
 let btTT = null;
 
 // ── Persistence ──
-function btTodayStr(){ return new Date().toISOString().split('T')[0]; }
+function btTodayStr(){ return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}); }
 
 function btLoad(){
   const today = btTodayStr();
@@ -7474,7 +7507,7 @@ function btRenderGatepasses(){
 
   const today  = btTodayStr();
   const passes = (typeof GS !== 'undefined' && GS.passes) ? GS.passes : [];
-  const todayPasses = passes.filter(p => p.date === today);
+  const todayPasses = passes.filter(p => p.date === today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
   // Update tab count badge
   if(cntEl) cntEl.textContent = todayPasses.length > 0 ? `(${todayPasses.length})` : '';
