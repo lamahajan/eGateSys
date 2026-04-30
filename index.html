@@ -864,9 +864,8 @@ body.dark .sb-btn.active-gate { background: rgba(34,197,94,.1); }
 .ob.pend{background:var(--amber-l);border:1px solid var(--amber);color:var(--amber);}
 /* Cards grid for pending section */
 #g-sec-pending .card, #g-sec-out .card { margin-bottom:7px; }
-@media(min-width:600px){
-  #g-sec-pending > .pass-grid, #g-sec-out > .pass-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:8px; }
-}
+.pass-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
+@media(max-width:480px){ .pass-grid { grid-template-columns: 1fr; } }
 
 /* Gate out button */
 .gobtn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--green-l),var(--bg4));border:2px solid var(--green);color:var(--green);border-radius:var(--r);padding:13px 20px;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;cursor:pointer;transition:all .25s;width:100%;justify-content:center;}
@@ -3107,14 +3106,8 @@ function gLoadLocal(){
 }
 function gSaveLocal(){
   try{
-    // pickerPhoto (base64) localStorage mein save nahi karein — 5MB limit bachao
-    // Firebase se har baar fresh fetch hogi, lekin passes list save rahegi
-    const passesForStorage = GS.passes.map(p => {
-      if(!p.pickerPhoto) return p;
-      const {pickerPhoto, ...rest} = p;
-      return {...rest, _hasPhoto: true}; // flag: photo Firebase mein hai, reload pe fetch hogi
-    });
-    localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:passesForStorage,buses:GS.buses}));
+    // Full pass data save karein including pickerPhoto
+    localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:GS.passes,buses:GS.buses}));
     localStorage.setItem('gp_local_mod',String(gLocalMod));
     localStorage.setItem('gp_sync_ts',String(gSyncTs));
   }catch(e){
@@ -3296,20 +3289,18 @@ function gRenderPasses(){
   const outCnt=all.filter(p=>p.gateOutTime).length;
   document.getElementById('g-tbadge').textContent=all.length+' today';
   document.getElementById('g-gcnt').textContent=`Total: ${all.length}  ·  Out: ${outCnt}  ·  Pending: ${all.length-outCnt}`;
-  const filtered=all;
-  const pending=filtered.filter(p=>!p.gateOutTime).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const done=filtered.filter(p=>!!p.gateOutTime).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  // No pills filter — show all passes
+  const pending=all.filter(p=>!p.gateOutTime);
+  const done=all.filter(p=>!!p.gateOutTime);
 
   if(pending.length){
-    let ph=`<div class="sdiv"><span class="slbl" style="color:var(--amber)">${_t('js_to_be_out')}</span><div class="sline" style="background:var(--amber)"></div><span class="scnt">${pending.length}</span></div>`;
-    ph+=`<div class="pass-grid">`;
-    ph+=pending.map(p=>gPassCard(p)).join('');
-    ph+=`</div>`;
+    let ph=`<div class="sdiv"><span class="slbl" style="color:var(--amber)">⏳ ${_t('js_to_be_out')}</span><div class="sline" style="background:var(--amber)"></div><span class="scnt">${pending.length}</span></div>`;
+    ph+=`<div class="pass-grid">${pending.map(p=>gPassCard(p)).join('')}</div>`;
     document.getElementById('g-sec-pending').innerHTML=ph;
   }else document.getElementById('g-sec-pending').innerHTML='';
 
   if(done.length){
-    let oh=`<div class="sdiv" style="margin-top:${pending.length?'24px':'0'}"><span class="slbl" style="color:var(--green)">${_t('js_already_out')}</span><div class="sline" style="background:var(--green)"></div><span class="scnt">${done.length}</span></div>`;
+    let oh=`<div class="sdiv" style="margin-top:${pending.length?'24px':'0'}"><span class="slbl" style="color:var(--green)">✅ ${_t('js_already_out')}</span><div class="sline" style="background:var(--green)"></div><span class="scnt">${done.length}</span></div>`;
     const grp={};done.forEach(p=>{const k=p.busNumber||'Unassigned';if(!grp[k])grp[k]=[];grp[k].push(p);});
     oh+=`<div class="bus-cards-grid">`;
     Object.entries(grp).forEach(([bus,arr])=>{
@@ -3350,22 +3341,13 @@ function gPassCard(p){
         title="Tap to enlarge">`
     : `<div style="width:44px;height:44px;border-radius:8px;border:2px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🧑</div>`;
 
-  // Bus section (non-out only)
-  const busSection = gBusEditEnabled()
-    ? `<div class="lbl" style="margin-bottom:5px">🚌 Bus at Exit <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">(update if changed)</span></div>
-       <select id="gbus-upd-${p.id}" class="sel">
-         <option value="${gE(p.busNumber||'')}">${p.busNumber?'🚌 '+gE(p.busNumber):'— Keep current / None —'}</option>
-         ${GS.buses.filter(b=>b!==p.busNumber).map(b=>`<option value="${gE(b)}">🚌 ${gE(b)}</option>`).join('')}
-       </select>`
-    : `<div class="g-info">🚌 Bus: <b>${p.busNumber||'—'}</b></div><input type="hidden" id="gbus-upd-${p.id}" value="${gE(p.busNumber||'')}">`;
-
   return `<div class="card" id="gcard-${p.id}">
 
     <!-- ── TOP: name + badges ── -->
     <div style="padding:8px 11px 7px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div style="flex:1;min-width:0">
         <div class="cn" style="font-size:12px">${gE(p.studentName)}</div>
-        <div class="cs" style="margin-top:2px;font-size:10px">Class ${gE(p.class)} · Adm: ${gE(p.admissionNumber)} · ${p.time}</div>
+        <div class="cs" style="margin-top:2px;font-size:10px">${_t('js_class')} ${gE(p.class)} · ${_t('js_adm')}: ${gE(p.admissionNumber)} · ${p.time}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
         <span class="pid">#${p.id.substr(-4).toUpperCase()}</span>
@@ -3438,8 +3420,10 @@ function gToggleCard(bid){
 function gSetFilter(bus){gFilter=bus;gOpenCards={};gRenderPasses();}
 function gTgCard(id){
   const cb=document.getElementById('gb-'+id);
+  const chev=document.getElementById('gchev-'+id);
   const isOpen=cb&&cb.classList.contains('open');
   if(cb)cb.classList.toggle('open');
+  if(chev)chev.classList.toggle('open');
   // Track open state so gRenderPasses can restore it
   if(!window.gOpenPassCards)window.gOpenPassCards={};
   window.gOpenPassCards[id]=!isOpen;
@@ -3505,7 +3489,9 @@ async function gPunchOut(id){
   window.gOpenPassCards[id]=true;
   setTimeout(()=>{
     const cb=document.getElementById('gb-'+id);
+    const ch=document.getElementById('gchev-'+id);
     if(cb&&!cb.classList.contains('open'))cb.classList.add('open');
+    if(ch&&!ch.classList.contains('open'))ch.classList.add('open');
   },50);
   // WhatsApp gate-out notification
   gSendExitWA(p);
