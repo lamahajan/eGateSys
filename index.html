@@ -1839,7 +1839,6 @@ body.dark {
             <div class="dbig" id="g-gdate"></div>
             <div class="dcnt" id="g-gcnt">Loading…</div>
           </div>
-          <div class="pills" id="g-pills"></div>
           <div id="g-sec-pending"></div>
           <div id="g-sec-out"></div>
         </div>
@@ -3264,12 +3263,7 @@ function gRenderPasses(){
   const outCnt=all.filter(p=>p.gateOutTime).length;
   document.getElementById('g-tbadge').textContent=all.length+' today';
   document.getElementById('g-gcnt').textContent=`Total: ${all.length}  ·  Out: ${outCnt}  ·  Pending: ${all.length-outCnt}`;
-  const byBus={};all.forEach(p=>{const k=p.busNumber||'Unassigned';if(!byBus[k])byBus[k]=[];byBus[k].push(p);});
-  const bkeys=Object.keys(byBus);
-  document.getElementById('g-pills').innerHTML=['ALL',...bkeys].map(b=>
-    `<button class="pill${gFilter===b?' active':''}" onclick="gSetFilter('${gE(b)}')">${b} (${b==='ALL'?all.length:byBus[b]?.length||0})</button>`
-  ).join('');
-  const filtered=gFilter==='ALL'?all:all.filter(p=>(p.busNumber||'Unassigned')===gFilter);
+  const filtered=all;
   const pending=filtered.filter(p=>!p.gateOutTime);
   const done=filtered.filter(p=>!!p.gateOutTime);
 
@@ -6428,6 +6422,7 @@ const ARR = { arrivals:{}, departures:{}, date:'' };
 let arrMode = 'morning'; // 'morning' | 'evening'
 let arrFilter = 'ALL';
 let arrSyncIv = null;
+let arrLocalTs = 0;
 let arrTT;
 
 function arrTodayStr(){ return new Date().toISOString().split('T')[0]; }
@@ -6468,10 +6463,17 @@ async function arrSync(){
   arrSetSS('ing');
   const fbKey = 'arriv_' + arrTodayStr();
   try{
+    // Step 1: Cheap ts pre-check (~20 bytes) — skip full download if unchanged
+    const tsr = await fetch(`${gCfg.url}/${gCfg.code}/${fbKey}/ts.json`);
+    if(tsr.ok){
+      const remTs = await tsr.json();
+      if(remTs && remTs === arrLocalTs){ arrSetSS('ok'); return; }
+    }
+    // Step 2: Full fetch only when ts changed
     const r = await fetch(`${gCfg.url}/${gCfg.code}/${fbKey}.json`);
     if(!r.ok) throw 0;
     const d = await r.json();
-    if(d){ ARR.arrivals = d.arrivals||{}; ARR.departures = d.departures||{}; arrSaveLocal(); }
+    if(d){ ARR.arrivals = d.arrivals||{}; ARR.departures = d.departures||{}; arrLocalTs = d.ts||0; arrSaveLocal(); }
     arrSetSS('ok');
     arrRender();
     arrUpdateHomeStat();
