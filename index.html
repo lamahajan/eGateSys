@@ -7447,8 +7447,8 @@ async function btSendTelegram(){
       const shiftIn   = shiftFrE.reduce((s,e)=>s+(e.count||0),0);
       // Bus-wise gatepass count
       const gpC = btGatepassCountForBus(bus.name);
-      let row = `🚌 *${bus.name}:* ${c}`;
-      if(gpC > 0) row += ` (GP=${gpC})`;
+      let row = `🚌 *${bus.name}:* On Bus: ${c}`;
+      if(gpC > 0) row += ` (GP=${gpC}) | Total: ${c + gpC}`;
       if(c===0 && !shiftIn && !shiftOut) row += ` _(absent)_`;
       lines.push(row);
       // Shift detail lines — who went where, how many
@@ -7475,13 +7475,16 @@ async function btSendTelegram(){
     // Evening — compare with morning
     let mTot = 0;
     BT_DATA.buses.forEach(b=>{ mTot+=b.morning||0; mTot+=b.parentMorning||0; });
-    const diff = mTot - grandTotal;
+    // Total GP count across all buses
+    const totalGP = BT_DATA.buses.reduce((s,b)=>s+btGatepassCountForBus(b.name),0);
+    const eveningFinal = grandTotal + totalGP;
+    const diff = mTot - eveningFinal;
     lines.push(`━━━━━━━━━━━━━━━━━━`);
-    lines.push(`📊 *Evening Total: ${grandTotal}*`);
+    lines.push(`📊 *Evening Total: On Bus: ${grandTotal}${totalGP>0?` + GP: ${totalGP} = ${eveningFinal}`:``}*`);
     if(mTot>0){
-      if(diff===0)      lines.push(`✅ *Match!* Morning (${mTot}) = Evening (${grandTotal})`);
-      else if(diff>0)   lines.push(`⚠️ *${diff} short* — Morning: ${mTot}  •  Evening: ${grandTotal}`);
-      else              lines.push(`⚠️ *${Math.abs(diff)} extra* — Morning: ${mTot}  •  Evening: ${grandTotal}`);
+      if(diff===0)      lines.push(`✅ *Match!* Morning Total: ${mTot} = Evening Total: ${eveningFinal}`);
+      else if(diff>0)   lines.push(`⚠️ *${diff} short* — Morning Total: ${mTot}  •  Evening Total: ${eveningFinal}`);
+      else              lines.push(`⚠️ *${Math.abs(diff)} extra* — Morning Total: ${mTot}  •  Evening Total: ${eveningFinal}`);
     }
     // Parent evening
     const pe = BT_DATA.parent?.evening||0;
