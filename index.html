@@ -3309,8 +3309,8 @@ function gRenderPasses(){
   document.getElementById('g-tbadge').textContent=all.length+' today';
   document.getElementById('g-gcnt').textContent=`Total: ${all.length}  ·  Out: ${outCnt}  ·  Pending: ${all.length-outCnt}`;
   // No pills filter — show all passes
-  const pending=all.filter(p=>!p.gateOutTime);
-  const done=all.filter(p=>!!p.gateOutTime);
+  const pending=all.filter(p=>!p.gateOutTime).sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  const done=all.filter(p=>!!p.gateOutTime).sort((a,b)=>(b.gateOutTime||'').localeCompare(a.gateOutTime||''));
 
   if(pending.length){
     let ph=`<div class="sdiv"><span class="slbl" style="color:var(--amber)">⏳ ${_t('js_to_be_out')}</span><div class="sline" style="background:var(--amber)"></div><span class="scnt">${pending.length}</span></div>`;
