@@ -3753,6 +3753,8 @@ function gExportCfg(){
     g_bus_edit:        localStorage.getItem('g_bus_edit_enabled')    ||'',
     // ── Attendance grace period ──
     att_grace_days:    localStorage.getItem('att_grace_days')        ||'',
+    // ── PWA custom icon ──
+    pwa_icon:          localStorage.getItem('pwa-custom-icon')       ||'',
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='eGateSys_Config.json';a.click();
@@ -3790,6 +3792,8 @@ function gImportCfg(){
         try{ const h=JSON.parse(data.att_hidden_fields); window.dispatchEvent(new CustomEvent('lis_att_fields_changed',{detail:{hidden:h}})); }catch{} }
       if(data.g_bus_edit)        localStorage.setItem('g_bus_edit_enabled', data.g_bus_edit);
       if(data.att_grace_days)    localStorage.setItem('att_grace_days',     data.att_grace_days);
+      // PWA custom icon
+      if(data.pwa_icon){ localStorage.setItem('pwa-custom-icon', data.pwa_icon); pwaSetCustomIcon(data.pwa_icon); }
       gToast('✅ Config imported! Reloading…','inf');
       setTimeout(()=>location.reload(),1200);
     }catch(err){ gToast('❌ Import failed: '+err.message,'err'); }
