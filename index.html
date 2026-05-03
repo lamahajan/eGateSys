@@ -2053,6 +2053,48 @@ body.dark {
               </div>
             </div>
 
+            <!-- ── Bus Tally Firebase Sync ── -->
+            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
+              <button type="button" onclick="gToggle('g-bt-fb-body','g-bt-fb-arrow')"
+                style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:none;border:none;cursor:pointer;text-align:left">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🚌</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:800;color:var(--text);font-family:var(--sans)">Bus Tally Sync</div>
+                  <div id="g-bt-fb-status" style="font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:1px">⚪ Not configured</div>
+                </div>
+                <span id="g-bt-fb-arrow" style="font-size:11px;color:var(--sub);transition:transform .2s;transform:rotate(0deg);flex-shrink:0">▶</span>
+              </button>
+              <div id="g-bt-fb-body" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border)">
+                <div style="height:10px"></div>
+                <div style="font-size:11px;color:var(--sub);font-family:var(--sans);margin-bottom:10px;line-height:1.5">
+                  Morning/Evening tally alag Firebase pe sync hoga — multiple devices mein live counts share honge.
+                </div>
+                <div style="margin-bottom:10px">
+                  <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">DATABASE URL</label>
+                  <input id="g-bt-fb-url" type="text" placeholder="https://…firebaseio.com"
+                    style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box"
+                    onfocus="this.style.borderColor='var(--a-acc)'" onblur="this.style.borderColor='var(--border)'">
+                </div>
+                <div style="margin-bottom:12px">
+                  <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">SYNC CODE</label>
+                  <input id="g-bt-fb-code" type="text" placeholder="e.g. LOTUS_BUS_2025"
+                    style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:var(--sans);outline:none;box-sizing:border-box"
+                    onfocus="this.style.borderColor='var(--a-acc)'" onblur="this.style.borderColor='var(--border)'">
+                </div>
+                <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px">
+                  <button type="button" onclick="btFbSaveCfg()"
+                    style="flex:1;min-width:110px;padding:10px;background:var(--a-acc);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)">💾 Save & Connect</button>
+                  <button type="button" onclick="btFbTestCfg()"
+                    style="padding:10px 13px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">🔌 Test</button>
+                  <button type="button" onclick="btFbDisconnect()"
+                    style="padding:10px 12px;background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer">✕</button>
+                </div>
+                <button type="button" onclick="btFbPull(true)"
+                  style="width:100%;padding:9px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);margin-top:2px">⬇️ Pull from Firebase Now</button>
+                <div id="g-bt-fb-info" style="font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:7px"></div>
+              </div>
+            </div>
+
             <!-- ── Telegram ── -->
             <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
               <button type="button" onclick="gToggle('g-tg-body','g-tg-arrow')"
@@ -3661,6 +3703,7 @@ function gOpenSettings(){
   const src = document.getElementById('pwa-icon-source');
   if(prev){ prev.src = customIcon || defaultIcon; }
   if(src){ src.textContent = customIcon ? '✅ Custom icon set' : 'Default icon'; }
+  btFbLoadCfgF();
 }
 function gCloseSettings(){
   const ov = document.getElementById('g-settings-overlay');
@@ -3672,7 +3715,7 @@ function gCheckPW(){
     document.getElementById('g-pw-gate').style.display='none';
     document.getElementById('g-set-ct').style.display='block'; if(typeof visRenderSettingsLists==='function'){visCfgLoad();visRenderSettingsLists();}
     document.getElementById('g-pw-err').textContent='';
-    gLoadCfgF();gRenderBuses();gLoadWAExit();
+    gLoadCfgF();gRenderBuses();gLoadWAExit();btFbLoadCfgF();
   }else{
     document.getElementById('g-pw-err').textContent='❌ Wrong password';
     document.getElementById('g-pw-inp').value='';
@@ -3755,6 +3798,9 @@ function gExportCfg(){
     att_grace_days:    localStorage.getItem('att_grace_days')        ||'',
     // ── PWA custom icon ──
     pwa_icon:          localStorage.getItem('pwa-custom-icon')       ||'',
+    // ── Bus Tally Firebase ──
+    bt_fb_url:         localStorage.getItem('bt_fb_url')             ||'',
+    bt_fb_code:        localStorage.getItem('bt_fb_code')            ||'',
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='eGateSys_Config.json';a.click();
@@ -3794,6 +3840,9 @@ function gImportCfg(){
       if(data.att_grace_days)    localStorage.setItem('att_grace_days',     data.att_grace_days);
       // PWA custom icon
       if(data.pwa_icon){ localStorage.setItem('pwa-custom-icon', data.pwa_icon); pwaSetCustomIcon(data.pwa_icon); }
+      // Bus Tally Firebase
+      if(data.bt_fb_url)  localStorage.setItem('bt_fb_url',  data.bt_fb_url);
+      if(data.bt_fb_code) localStorage.setItem('bt_fb_code', data.bt_fb_code);
       gToast('✅ Config imported! Reloading…','inf');
       setTimeout(()=>location.reload(),1200);
     }catch(err){ gToast('❌ Import failed: '+err.message,'err'); }
@@ -6943,8 +6992,130 @@ function btLoad(){
 
 function btSave(){
   BT_DATA.date = btTodayStr();
+  BT_DATA._ts  = Date.now();
   try{ localStorage.setItem(BT_KEY, JSON.stringify(BT_DATA)); }catch(e){}
+  btFbPush();
 }
+
+// ══════════════════════════════════════════════════════════
+// ── Bus Tally Firebase Sync ──
+// ══════════════════════════════════════════════════════════
+let _btFbCfg    = {url:'', code:''};
+let _btFbSyncIv = null;
+
+function btFbLoadCfg(){
+  const u = localStorage.getItem('bt_fb_url')||'';
+  const c = localStorage.getItem('bt_fb_code')||'';
+  _btFbCfg = { url: u.replace(/\/$/,''), code: c };
+}
+
+function btFbLoadCfgF(){
+  const urlEl  = document.getElementById('g-bt-fb-url');
+  const codeEl = document.getElementById('g-bt-fb-code');
+  const stEl   = document.getElementById('g-bt-fb-status');
+  if(urlEl)  urlEl.value  = localStorage.getItem('bt_fb_url') ||'';
+  if(codeEl) codeEl.value = localStorage.getItem('bt_fb_code')||'';
+  const connected = !!(localStorage.getItem('bt_fb_url')&&localStorage.getItem('bt_fb_code'));
+  if(stEl) stEl.textContent = connected
+    ? `✅ ${localStorage.getItem('bt_fb_url')}`
+    : '⚪ Not configured';
+}
+
+function _btFbSt(msg, color){
+  const el  = document.getElementById('g-bt-fb-status');
+  const inf = document.getElementById('g-bt-fb-info');
+  if(el){  el.textContent=msg;  el.style.color=color||''; }
+  if(inf){ inf.textContent=msg; inf.style.color=color||''; }
+}
+
+async function btFbSaveCfg(){
+  const url  = (document.getElementById('g-bt-fb-url') ?.value||'').trim().replace(/\/$/,'');
+  const code = (document.getElementById('g-bt-fb-code')?.value||'').trim().replace(/[^a-zA-Z0-9_-]/g,'');
+  if(!url||!code){ _btFbSt('❌ URL aur Code dono chahiye','var(--red)'); return; }
+  try{
+    const r = await fetch(`${url}/${code}/bt_ping.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
+    if(!r.ok) throw 0;
+    localStorage.setItem('bt_fb_url',url);
+    localStorage.setItem('bt_fb_code',code);
+    _btFbCfg = {url, code};
+    _btFbSt('✅ Saved & connected!','var(--green)');
+    btFbStartSync();
+    btFbLoadCfgF();
+    gToast('✅ Bus Tally Firebase connected!');
+  }catch{ _btFbSt('❌ Failed — check URL & Firebase rules','var(--red)'); }
+}
+
+async function btFbTestCfg(){
+  const url  = (document.getElementById('g-bt-fb-url') ?.value||'').trim().replace(/\/$/,'');
+  const code = (document.getElementById('g-bt-fb-code')?.value||'').trim();
+  if(!url||!code){ _btFbSt('❌ Pehle URL aur Code daalen','var(--red)'); return; }
+  try{
+    const r = await fetch(`${url}/${code}/bt_ping.json`);
+    if(r.ok){ _btFbSt('🔌 Connection OK','var(--green)'); gToast('Bus Tally Firebase OK'); }
+    else throw 0;
+  }catch{ _btFbSt('❌ Connection failed — Firebase rules check karen','var(--red)'); }
+}
+
+function btFbDisconnect(){
+  if(!confirm('Bus Tally Firebase disconnect kar dein?')) return;
+  localStorage.removeItem('bt_fb_url');
+  localStorage.removeItem('bt_fb_code');
+  _btFbCfg = {url:'', code:''};
+  if(_btFbSyncIv){ clearInterval(_btFbSyncIv); _btFbSyncIv=null; }
+  _btFbSt('⚪ Disconnected');
+  btFbLoadCfgF();
+  gToast('Bus Tally Firebase disconnected');
+}
+
+async function btFbPush(){
+  if(!_btFbCfg.url||!_btFbCfg.code) return;
+  const date    = btTodayStr();
+  const payload = {...BT_DATA, _ts: BT_DATA._ts||Date.now()};
+  try{
+    await fetch(`${_btFbCfg.url}/${_btFbCfg.code}/bt_tally/${date}.json`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    _btFbSt('🟢 Synced — '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}));
+  }catch(e){ _btFbSt('🔴 Push failed','var(--red)'); }
+}
+
+async function btFbPull(force){
+  if(!_btFbCfg.url||!_btFbCfg.code) return;
+  const date = btTodayStr();
+  try{
+    const r = await fetch(`${_btFbCfg.url}/${_btFbCfg.code}/bt_tally/${date}.json`);
+    if(!r.ok) return;
+    const remote = await r.json();
+    if(!remote||!remote.date) return;
+    const localTs  = BT_DATA._ts||0;
+    const remoteTs = remote._ts||0;
+    if(remoteTs > localTs || force){
+      BT_DATA = {...remote};
+      try{ localStorage.setItem(BT_KEY, JSON.stringify(BT_DATA)); }catch(e){}
+      if(typeof btRenderMorning   ==='function') btRenderMorning();
+      if(typeof btRenderEvening   ==='function') btRenderEvening();
+      if(typeof btRenderSummary   ==='function') btRenderSummary();
+      if(typeof btCheckMatch      ==='function') btCheckMatch();
+      if(typeof homeUpdateBusTally==='function') homeUpdateBusTally();
+      _btFbSt('⬇️ Pulled — '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}));
+    } else {
+      _btFbSt('🟢 In sync — '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}));
+    }
+  }catch(e){ _btFbSt('🔴 Pull failed','var(--red)'); }
+}
+
+function btFbStartSync(){
+  if(_btFbSyncIv) clearInterval(_btFbSyncIv);
+  btFbPull();
+  _btFbSyncIv = setInterval(()=>btFbPull(), 10000);
+}
+
+window.addEventListener('load',function(){
+  btFbLoadCfg();
+  if(_btFbCfg.url&&_btFbCfg.code) btFbStartSync();
+},{once:true});
 
 // ── Init ──
 function btInit(){
