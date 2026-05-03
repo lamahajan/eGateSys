@@ -9,16 +9,57 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#15803d"/>
 <link id="pwa-manifest" rel="manifest"/>
+<link id="pwa-favicon" rel="icon" type="image/svg+xml"/>
 <title>GateSys — Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script>
 // ── PWA Manifest (inline blob) ──
 (function(){
-  const icon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
-  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:icon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
+  const customIcon = localStorage.getItem('pwa-custom-icon');
+  const icon = customIcon || defaultIcon;
+  const iconType = customIcon ? (customIcon.startsWith('data:image/png') ? 'image/png' : customIcon.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml') : 'image/svg+xml';
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:icon,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  // Set favicon
+  const fav=document.getElementById('pwa-favicon');
+  if(fav){ fav.href=icon; fav.type=iconType; }
 })();
+// ── Custom Icon helpers ──
+function pwaSetCustomIcon(dataUrl){
+  localStorage.setItem('pwa-custom-icon', dataUrl);
+  // Update manifest blob
+  const iconType = dataUrl.startsWith('data:image/png') ? 'image/png' : dataUrl.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml';
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:dataUrl,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:dataUrl,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
+  const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  // Update favicon live
+  const fav=document.getElementById('pwa-favicon');
+  if(fav){ fav.href=dataUrl; fav.type=iconType; }
+  // Update preview
+  const prev=document.getElementById('pwa-icon-preview');
+  if(prev) prev.src=dataUrl;
+}
+function pwaResetIcon(){
+  localStorage.removeItem('pwa-custom-icon');
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
+  const fav=document.getElementById('pwa-favicon');
+  if(fav){ fav.href=defaultIcon; fav.type='image/svg+xml'; }
+  const prev=document.getElementById('pwa-icon-preview');
+  if(prev) prev.src=defaultIcon;
+  const blob=new Blob([JSON.stringify({name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:defaultIcon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:defaultIcon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]})],{type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+}
+function pwaHandleIconUpload(input){
+  const file=input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ alert('Please select an image file (PNG, JPG, SVG).'); return; }
+  if(file.size > 500*1024){ alert('Image too large! Please use an image under 500 KB.'); return; }
+  const reader=new FileReader();
+  reader.onload=function(e){ pwaSetCustomIcon(e.target.result); document.getElementById('pwa-icon-source').textContent='✅ Custom icon set'; };
+  reader.readAsDataURL(file);
+}
 // ── Service Worker ──
 if('serviceWorker' in navigator){
   const sw=`const C='egatesys-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./'])).then(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(h=>{const f=fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;}).catch(()=>null);return h||f;}).catch(()=>caches.match('./')));});`;
@@ -2091,6 +2132,48 @@ Regards,
               </div>
             </div>
 
+            <!-- ── App Icon & Favicon ── -->
+            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:4px">
+              <button type="button" onclick="gToggle('g-icon-body','g-icon-arrow')"
+                style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:none;border:none;cursor:pointer;text-align:left">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(181,136,62,.1);border:1px solid rgba(181,136,62,.25);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🖼️</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:800;color:var(--text);font-family:var(--sans)">App Icon &amp; Favicon</div>
+                  <div style="font-size:11px;color:var(--sub);font-family:var(--sans);margin-top:1px">PWA home screen icon + browser tab favicon</div>
+                </div>
+                <span id="g-icon-arrow" style="font-size:11px;color:var(--sub);transition:transform .2s;transform:rotate(0deg);flex-shrink:0">▶</span>
+              </button>
+              <div id="g-icon-body" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border)">
+                <div style="height:12px"></div>
+                <!-- Current icon preview -->
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px">
+                  <img id="pwa-icon-preview" src=""
+                    style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:2px solid var(--border);background:var(--bg3);flex-shrink:0"
+                    onerror="this.style.display='none'" onload="this.style.display='block'"/>
+                  <div>
+                    <div style="font-size:12px;font-weight:800;color:var(--text);font-family:var(--sans)">Current Icon</div>
+                    <div id="pwa-icon-source" style="font-size:10px;color:var(--sub);font-family:var(--mono);margin-top:2px">Default icon</div>
+                    <div style="font-size:10px;color:var(--mut);margin-top:4px;font-family:var(--sans)">Used as PWA icon &amp; browser favicon</div>
+                  </div>
+                </div>
+                <!-- Upload -->
+                <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:6px;font-family:var(--sans)">UPLOAD NEW ICON</label>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:var(--bg2);border:2px dashed var(--border2);border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:var(--green);font-family:var(--sans);transition:border-color .2s"
+                    onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border2)'">
+                    📁 Choose Image (PNG / JPG / SVG)
+                    <input type="file" accept="image/*" style="display:none" onchange="pwaHandleIconUpload(this)">
+                  </label>
+                  <div style="font-size:10px;color:var(--mut);font-family:var(--sans);text-align:center">Best size: 512×512 px · Max 500 KB · Square image recommended</div>
+                </div>
+                <!-- Reset -->
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                  <button type="button" onclick="pwaResetIcon();document.getElementById('pwa-icon-source').textContent='Default icon'"
+                    style="width:100%;padding:9px;background:none;color:var(--sub);border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🔄 Reset to Default Icon</button>
+                </div>
+              </div>
+            </div>
+
           </div><!-- /cards -->
         </div><!-- /g-set-ct -->
       </div><!-- /vis-settings-panel -->
@@ -3571,6 +3654,13 @@ function gOpenSettings(){
   // Load WA + Telegram fields
   gLoadWAExit();
   gLoadTelegram();
+  // Init icon preview
+  const customIcon = localStorage.getItem('pwa-custom-icon');
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
+  const prev = document.getElementById('pwa-icon-preview');
+  const src = document.getElementById('pwa-icon-source');
+  if(prev){ prev.src = customIcon || defaultIcon; }
+  if(src){ src.textContent = customIcon ? '✅ Custom icon set' : 'Default icon'; }
 }
 function gCloseSettings(){
   const ov = document.getElementById('g-settings-overlay');
