@@ -7363,10 +7363,6 @@ function btRenderEvening(){
           <div class="bt-mini-label">${_t('bt_shifted')} ${hasShift ? `<span style="font-size:9px;color:var(--amber)">${_t('bt_tap_edit')}</span>` : ''}</div>
           <div class="bt-mini-disp" style="${hasShift?'font-size:11px;line-height:1.4':''}">${shiftDisplay}</div>
         </div>
-        <div class="bt-mini-card ${remClass}" id="btec-rem-card-${idx}">
-          <div class="bt-mini-label">${_t('bt_remaining')}</div>
-          <div class="bt-mini-disp" id="btec-rem-${idx}">${remText}</div>
-        </div>
       </div>
       <button class="bt-shift-btn" onclick="btOpenShift(${idx})">${_t('bt_shift_btn')}</button>
     </div>`;
