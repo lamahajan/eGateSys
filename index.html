@@ -7389,7 +7389,22 @@ function btRenderSummary(){
   });
   const mPar = mParBus;
   const mTotal = mBus + mPar;
-  const eTotal = eBus;
+
+  // Include today's gatepasses in evening total
+  const today = btTodayStr();
+  const totalGP = (typeof GS !== 'undefined' && GS.passes)
+    ? GS.passes.filter(p => p.date === today).length
+    : 0;
+  const eTotal = eBus + totalGP;
+
+  // Morning tab — show only morning total, no evening comparison
+  const mornHTML = `
+    <div class="bt-sum-item">${_t('bt_morning_lbl')}: <b>${mTotal}</b>
+      <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${mBus} + 👪${mPar})</span>
+    </div>
+  `;
+
+  // Evening tab — show both totals + comparison
   const matchClass = mTotal===eTotal && mTotal>0 ? 'color:var(--bt-grn)' : 'color:var(--sub)';
   let matchStr = '';
   if(mTotal>0 && eTotal>0){
@@ -7397,17 +7412,18 @@ function btRenderSummary(){
     else if(mTotal>eTotal) matchStr = _t('bt_eve_short').replace('{n}', mTotal-eTotal);
     else matchStr = _t('bt_eve_extra').replace('{n}', eTotal-mTotal);
   }
-  const sumHTML = `
+  const gpNote = totalGP>0 ? ` + 🚪${totalGP}` : '';
+  const eveHTML = `
     <div class="bt-sum-item">${_t('bt_morning_lbl')}: <b>${mTotal}</b>
       <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${mBus} + 👪${mPar})</span>
     </div>
     <div class="bt-sum-item">${_t('bt_evening_lbl')}: <b>${eTotal}</b>${eExp?`/<span style="color:var(--sub)">${eExp}</span>`:''}
-      <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${eBus})</span>
+      <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${eBus}${gpNote})</span>
     </div>
     <div class="bt-sum-item" style="${matchClass};font-weight:800">${matchStr}</div>
   `;
-  if(sum) sum.innerHTML = sumHTML;
-  if(sumEve) sumEve.innerHTML = sumHTML;
+  if(sum) sum.innerHTML = mornHTML;
+  if(sumEve) sumEve.innerHTML = eveHTML;
 }
 
 function btCheckMatch(){
