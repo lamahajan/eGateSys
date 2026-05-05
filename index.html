@@ -1862,7 +1862,7 @@ body.dark {
       <!-- Sync bar -->
       <div id="g-sbar" class="off">
         <div class="g-dot" id="g-sdot"></div>
-        <span id="g-stxt" data-i18n="local_mode">Local mode — configure Firebase in Settings</span>
+        <span id="g-stxt"></span>
         <span style="margin-left:auto;opacity:.6;font-size:10px" id="g-stim"></span>
         <button onclick="gFetchAll()" style="background:none;border:none;cursor:pointer;color:currentColor;font-size:16px;margin-left:7px;line-height:1">↻</button>
       </div>
@@ -3392,7 +3392,7 @@ function gSetSS(st){
         t=document.getElementById('g-stxt'),ti=document.getElementById('g-stim');
   if(!b)return;
   b.className=st; d.className='g-dot'+(st==='ing'?' pulse':'');
-  const msgs={ok:'🟢 Synced with Firebase',err:'🔴 Sync error — tap ↻',ing:'⏳ Syncing…',off:'⚪ Local mode — configure Firebase in Settings'};
+  const msgs={ok:_t('sync_ok'),err:_t('sync_err'),ing:_t('sync_ing'),off:_t('local_mode')};
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
 }
@@ -5658,7 +5658,10 @@ const _T = {
     bus_moved_desc:   'Morning and Evening Bus Tally are now tabs inside the Student Management screen.',
     bus_shift_title:  'Evening Bus Shift',
     // Status
-    local_mode:       'Local mode — configure Firebase in Settings',
+    local_mode:       '⚪ Local mode — configure Firebase in Settings',
+    sync_ok:          '🟢 Synced with Firebase',
+    sync_err:         '🔴 Sync error — tap ↻',
+    sync_ing:         '⏳ Syncing…',
     // Placeholders
     ph_full_name:     'Full name',
     ph_mobile:        'Mobile number',
@@ -5835,7 +5838,10 @@ const _T = {
     bus_moved_desc:   'सुबह और शाम की बस टैली अब छात्र प्रबंधन स्क्रीन के अंदर टैब हैं।',
     bus_shift_title:  'शाम की बस शिफ्ट',
     // Status
-    local_mode:       'लोकल मोड — सेटिंग्स में Firebase कॉन्फ़िगर करें',
+    local_mode:       '⚪ लोकल मोड — सेटिंग्स में Firebase कॉन्फ़िगर करें',
+    sync_ok:          '🟢 Firebase से सिंक हो गया',
+    sync_err:         '🔴 सिंक त्रुटि — ↻ दबाएं',
+    sync_ing:         '⏳ सिंक हो रहा है…',
     // Placeholders
     ph_full_name:     'पूरा नाम',
     ph_mobile:        'मोबाइल नंबर',
@@ -6012,7 +6018,10 @@ const _T = {
     bus_moved_desc:   'ਸਵੇਰ ਅਤੇ ਸ਼ਾਮ ਦੀ ਬੱਸ ਟੈਲੀ ਹੁਣ ਵਿਦਿਆਰਥੀ ਪ੍ਰਬੰਧਨ ਸਕਰੀਨ ਦੇ ਟੈਬਾਂ ਵਿੱਚ ਹਨ।',
     bus_shift_title:  'ਸ਼ਾਮ ਦੀ ਬੱਸ ਬਦਲੀ',
     // Status
-    local_mode:       'ਲੋਕਲ ਮੋਡ — ਸੈਟਿੰਗਾਂ ਵਿੱਚ Firebase ਕੌਂਫਿਗਰ ਕਰੋ',
+    local_mode:       '⚪ ਲੋਕਲ ਮੋਡ — ਸੈਟਿੰਗਾਂ ਵਿੱਚ Firebase ਕੌਂਫਿਗਰ ਕਰੋ',
+    sync_ok:          '🟢 Firebase ਨਾਲ ਸਿੰਕ ਹੋ ਗਿਆ',
+    sync_err:         '🔴 ਸਿੰਕ ਤ੍ਰੁਟੀ — ↻ ਦਬਾਓ',
+    sync_ing:         '⏳ ਸਿੰਕ ਹੋ ਰਿਹਾ ਹੈ…',
     // Placeholders
     ph_full_name:     'ਪੂਰਾ ਨਾਮ',
     ph_mobile:        'ਮੋਬਾਈਲ ਨੰਬਰ',
@@ -6102,6 +6111,8 @@ function applyLang() {
   if (typeof btRenderSummary === 'function') btRenderSummary();
   if (typeof btCheckMatch === 'function') btCheckMatch();
   if (typeof homeUpdateBusTally === 'function') homeUpdateBusTally();
+  // Refresh sync status bar text in current language
+  if (typeof gSetSS === 'function') { const b = document.getElementById('g-sbar'); if(b) gSetSS(b.className||'off'); }
   // Update dropdown UI
   updateLangDropdownUI();
   // Update mobile topbar screen name
