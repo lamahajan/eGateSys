@@ -7352,7 +7352,7 @@ function btRenderEvening(){
         <span class="bt-bus-name">${btE(bus.name)}${shifted?`<span style="font-size:9px;color:var(--amber);font-weight:700;margin-left:4px">(${_t('bt_shifted_lbl')})</span>`:''}</span>
         ${isMatch?`<span style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:12px;background:var(--bt-grn-l);color:var(--bt-grn);border:1px solid var(--bt-grn)">${_t('bt_match')}</span>`:''}
       </div>
-      <div class="bt-mini-grid-4">
+      <div class="bt-mini-grid-5">
         <div class="bt-mini-card c-expect">
           <div class="bt-mini-label">${_t('bt_expected')}</div>
           <div class="bt-mini-disp" id="btec-exp-${idx}">${expected > 0 ? expected : `<span class='bt-mini-disp muted'>—</span>`}</div>
@@ -7372,6 +7372,10 @@ function btRenderEvening(){
         <div class="bt-mini-card ${hasShift ? 'c-shift' : ''}" ${hasShift ? `onclick="btOpenShiftDetail(${idx})" style="cursor:pointer;outline:2px solid transparent;transition:outline .15s" onmouseenter="this.style.outline='2px solid var(--amber)'" onmouseleave="this.style.outline='2px solid transparent'"` : ''}>
           <div class="bt-mini-label">${_t('bt_shifted')} ${hasShift ? `<span style="font-size:9px;color:var(--amber)">${_t('bt_tap_edit')}</span>` : ''}</div>
           <div class="bt-mini-disp" style="${hasShift?'font-size:11px;line-height:1.4':''}">${shiftDisplay}</div>
+        </div>
+        <div class="bt-mini-card ${remClass}" id="btec-rem-card-${idx}">
+          <div class="bt-mini-label" style="${remaining !== null && remaining < 0 ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : ''}">${remaining !== null && remaining < 0 ? '🔴 OVER' : _t('bt_remaining')}</div>
+          <div class="bt-mini-disp" id="btec-rem-${idx}">${remText}</div>
         </div>
       </div>
       <button class="bt-shift-btn" onclick="btOpenShift(${idx})">${_t('bt_shift_btn')}</button>
