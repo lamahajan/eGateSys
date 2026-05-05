@@ -1469,8 +1469,9 @@ body.dark {
 }
 /* Match banner */
 #bt-match-banner {
-  font-size: 12px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
   font-family: var(--mono); text-align: center;
+  line-height: 1.6;
 }
 #bt-match-banner.match  { background: var(--bt-grn-l); color: var(--bt-grn); border-color: var(--bt-grn); }
 #bt-match-banner.mismatch { background: var(--bt-red-l); color: var(--bt-red); border-color: var(--bt-red); }
@@ -7380,6 +7381,13 @@ function btCheckMatch(){
   let mT=0, eT=0;
   BT_DATA.buses.forEach(b=>{ mT+=b.morning||0; mT+=b.parentMorning||0; eT+=b.evening||0; });
 
+  // Total gatepass count — directly from today's GS.passes (no bus filter needed)
+  const today = btTodayStr();
+  const totalGP = (typeof GS !== 'undefined' && GS.passes)
+    ? GS.passes.filter(p => p.date === today).length
+    : 0;
+  const eFinal  = eT + totalGP;   // evening on-bus + gatepasses
+
   // Morning banner — show morning total summary
   if(mornBanner){
     if(mT===0){ mornBanner.style.display='none'; }
@@ -7387,21 +7395,38 @@ function btCheckMatch(){
       mornBanner.style.display='block';
       const mBus = BT_DATA.buses.reduce((s,b)=>s+(b.morning||0),0);
       const mPar = BT_DATA.buses.reduce((s,b)=>s+(b.parentMorning||0),0);
-      mornBanner.textContent = `🌅 Morning: ${mT}  (🚌${mBus} + 👪${mPar})`;
+      mornBanner.innerHTML =
+        `<div style="display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap">` +
+        `<span>🌅 <b>Morning Total: ${mT}</b></span>` +
+        `<span>(🚌 Bus: ${mBus} + 👪 Drop: ${mPar})</span>` +
+        `</div>`;
     }
   }
 
   if(!banner) return;
   if(mT===0 && eT===0){ banner.style.display='none'; return; }
   banner.style.display = 'block';
-  if(mT===eT){
-    banner.className='match';
-    banner.textContent = _t('bt_banner_match').replace('{m}',mT).replace('{e}',eT);
-  } else {
-    banner.className='mismatch';
-    const sign = eT > mT ? '+' : '−';
-    banner.textContent = _t('bt_banner_diff').replace('{m}',mT).replace('{e}',eT).replace('{d}',Math.abs(mT-eT)).replace('{sign}',sign);
-  }
+
+  const diff = mT - eFinal;
+  const isMatch = (diff === 0 && mT > 0);
+  banner.className = isMatch ? 'match' : 'mismatch';
+
+  const eveLabel = totalGP > 0
+    ? `🌆 Evening (Bus+GP): <b>${eT} + ${totalGP} = ${eFinal}</b>`
+    : `🌆 Evening: <b>${eFinal}</b>`;
+
+  const statusLine = isMatch
+    ? `✅ <b>Perfect Match!</b> Morning = Evening`
+    : diff > 0
+      ? `⚠️ <b>${diff} short</b> in Evening`
+      : `⚠️ <b>${Math.abs(diff)} extra</b> in Evening`;
+
+  banner.innerHTML =
+    `<div style="display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:5px">` +
+    `<span>🌅 Morning: <b>${mT}</b></span>` +
+    `<span>${eveLabel}</span>` +
+    `</div>` +
+    `<div>${statusLine}</div>`;
 }
 
 // ── Set counts ──
