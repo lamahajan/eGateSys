@@ -5594,6 +5594,35 @@ const _T = {
     // Match banner
     bt_banner_match:  '✅ Morning ({m}) = Evening ({e}) — Perfect Match!',
     bt_banner_diff:   '⚠️ Morning: {m} vs Evening: {e} — {sign}{d} difference',
+    bt_over:          '🔴 OVER',
+    // Attendance app
+    att_saved:        _t('att_saved'),
+    att_full_present: _t('att_full_present'),
+    att_days_off_lbl: _t('att_days_off_lbl'),
+    att_total_staff:  _t('att_total_staff'),
+    att_data_sent:    _t('att_data_sent'),
+    att_edit_again:   _t('att_edit_again'),
+    att_change_acc:   _t('att_change_acc'),
+    att_portal:       'Attendance Portal',
+    att_subtitle:     'Lotus International School — Supervisor System',
+    att_setup_title:  'FIREBASE SETUP (ONE TIME)',
+    att_cred_how:     'ℹ️ HOW TO GET CREDENTIALS?',
+    att_cred_steps:   _t('att_cred_steps'),
+    att_connecting:   'Connecting…',
+    att_connect_btn:  'Connect & Start →',
+    att_staff_title:  '📋 Staff Attendance',
+    att_settings_btn: _t('att_settings_btn'),
+    att_absent_badge: '{n} absent / days off',
+    att_refresh:      _t('att_refresh'),
+    att_tip:          '💡 Only <b>days off</b> to be mentioned — whosoever was present for the full month keep his day off as <b style="color:var(--grn,#22c55e)">0</b>',
+    att_no_staff:     'No Staff Member Found',
+    att_no_staff_sub: '${_t('att_no_staff_sub')}',
+    att_saving:       '⏳ Saving…',
+    att_submit:       '✅ Submit {ml} Attendance',
+    att_days_off_col: _t('att_days_off_col'),
+    att_full_p_str:   _t('att_full_p_str'),
+    att_day_off_str:  '⚠ {d} day off',
+    att_prorata:      '🆕 Joined {day} {mon} — Pro-Rata',
     // Visitor form
     vis_name:         'Visitor Name *',
     vis_phone:        'Phone Number * required',
@@ -5741,6 +5770,35 @@ const _T = {
     bt_eve_extra:     '⚠️ शाम +{n} सुबह से अधिक',
     bt_banner_match:  '✅ सुबह ({m}) = शाम ({e}) — पूरा मेल!',
     bt_banner_diff:   '⚠️ सुबह: {m} बनाम शाम: {e} — {sign}{d} का अंतर',
+    bt_over:          '🔴 ओवर',
+    // Attendance app
+    att_saved:        'उपस्थिति सहेज ली गई!',
+    att_full_present: 'पूर्ण उपस्थित',
+    att_days_off_lbl: 'छुट्टियाँ',
+    att_total_staff:  'कुल स्टाफ',
+    att_data_sent:    '✓ डेटा भेजा गया — उपस्थिति भर दी गई',
+    att_edit_again:   '✏️ संपादित / फिर से अपडेट करें',
+    att_change_acc:   'खाता बदलें',
+    att_portal:       'उपस्थिति पोर्टल',
+    att_subtitle:     'लोटस इंटरनेशनल स्कूल — सुपरवाइज़र सिस्टम',
+    att_setup_title:  'फायरबेस सेटअप (एक बार)',
+    att_cred_how:     'ℹ️ क्रेडेंशियल कैसे मिलेंगे?',
+    att_cred_steps:   ['StaffFlow ऐप खोलें','Settings → Sync सेक्शन','Firebase apiKey और Database URL कॉपी करें','यहाँ पेस्ट करें — एक बार का सेटअप'],
+    att_connecting:   'जोड़ रहे हैं…',
+    att_connect_btn:  'जोड़ें और शुरू करें →',
+    att_staff_title:  '📋 स्टाफ उपस्थिति',
+    att_settings_btn: '⚙️ सेटिंग्स',
+    att_absent_badge: '{n} अनुपस्थित / छुट्टी',
+    att_refresh:      '🔄 रिफ्रेश',
+    att_tip:          '💡 केवल <b>छुट्टियाँ</b> दर्ज करें — जो पूरे महीने उपस्थित रहे उनकी छुट्टी <b style="color:var(--grn,#22c55e)">0</b> रखें',
+    att_no_staff:     'कोई स्टाफ सदस्य नहीं मिला',
+    att_no_staff_sub: 'कृपया StaffFlow ऐप में स्टाफ जोड़ें और फिर रिफ्रेश करें।',
+    att_saving:       '⏳ सहेज रहे हैं…',
+    att_submit:       '✅ {ml} की उपस्थिति जमा करें',
+    att_days_off_col: 'छुट्टियाँ',
+    att_full_p_str:   '✓ पूर्ण उपस्थित',
+    att_day_off_str:  '⚠ {d} दिन छुट्टी',
+    att_prorata:      '🆕 {day} {mon} को जोड़े — प्रो-राटा',
     // Visitor form
     vis_name:         'विज़िटर का नाम *',
     vis_phone:        'फोन नंबर * आवश्यक',
@@ -5888,6 +5946,35 @@ const _T = {
     bt_eve_extra:     '⚠️ ਸ਼ਾਮ +{n} ਸਵੇਰ ਨਾਲੋਂ ਵੱਧ',
     bt_banner_match:  '✅ ਸਵੇਰ ({m}) = ਸ਼ਾਮ ({e}) — ਪੂਰਾ ਮੇਲ!',
     bt_banner_diff:   '⚠️ ਸਵੇਰ: {m} ਬਨਾਮ ਸ਼ਾਮ: {e} — {sign}{d} ਦਾ ਫ਼ਰਕ',
+    bt_over:          '🔴 ਵੱਧ',
+    // Attendance app
+    att_saved:        'ਹਾਜ਼ਰੀ ਸੁਰੱਖਿਅਤ ਹੋ ਗਈ!',
+    att_full_present: 'ਪੂਰੀ ਹਾਜ਼ਰੀ',
+    att_days_off_lbl: 'ਛੁੱਟੀਆਂ',
+    att_total_staff:  'ਕੁੱਲ ਸਟਾਫ',
+    att_data_sent:    '✓ ਡੇਟਾ ਭੇਜਿਆ ਗਿਆ — ਹਾਜ਼ਰੀ ਭਰ ਦਿੱਤੀ ਗਈ',
+    att_edit_again:   '✏️ ਸੋਧੋ / ਦੁਬਾਰਾ ਅੱਪਡੇਟ ਕਰੋ',
+    att_change_acc:   'ਖਾਤਾ ਬਦਲੋ',
+    att_portal:       'ਹਾਜ਼ਰੀ ਪੋਰਟਲ',
+    att_subtitle:     'ਲੋਟਸ ਇੰਟਰਨੈਸ਼ਨਲ ਸਕੂਲ — ਸੁਪਰਵਾਈਜ਼ਰ ਸਿਸਟਮ',
+    att_setup_title:  'ਫਾਇਰਬੇਸ ਸੈੱਟਅੱਪ (ਇੱਕ ਵਾਰ)',
+    att_cred_how:     'ℹ️ ਕ੍ਰੈਡੈਂਸ਼ੀਅਲ ਕਿਵੇਂ ਮਿਲਣਗੇ?',
+    att_cred_steps:   ['StaffFlow ਐਪ ਖੋਲੋ','Settings → Sync ਸੈਕਸ਼ਨ','Firebase apiKey ਅਤੇ Database URL ਕਾਪੀ ਕਰੋ','ਇੱਥੇ ਪੇਸਟ ਕਰੋ — ਇੱਕ ਵਾਰ ਦਾ ਸੈੱਟਅੱਪ'],
+    att_connecting:   'ਜੋੜ ਰਹੇ ਹਾਂ…',
+    att_connect_btn:  'ਜੋੜੋ ਅਤੇ ਸ਼ੁਰੂ ਕਰੋ →',
+    att_staff_title:  '📋 ਸਟਾਫ ਹਾਜ਼ਰੀ',
+    att_settings_btn: '⚙️ ਸੈਟਿੰਗਾਂ',
+    att_absent_badge: '{n} ਗੈਰਹਾਜ਼ਰ / ਛੁੱਟੀ',
+    att_refresh:      '🔄 ਰਿਫ੍ਰੈਸ਼',
+    att_tip:          '💡 ਸਿਰਫ਼ <b>ਛੁੱਟੀਆਂ</b> ਦਰਜ ਕਰੋ — ਜੋ ਪੂਰੇ ਮਹੀਨੇ ਹਾਜ਼ਰ ਰਹੇ ਉਹਨਾਂ ਦੀ ਛੁੱਟੀ <b style="color:var(--grn,#22c55e)">0</b> ਰੱਖੋ',
+    att_no_staff:     'ਕੋਈ ਸਟਾਫ ਮੈਂਬਰ ਨਹੀਂ ਮਿਲਿਆ',
+    att_no_staff_sub: 'ਕਿਰਪਾ ਕਰਕੇ StaffFlow ਐਪ ਵਿੱਚ ਸਟਾਫ ਜੋੜੋ ਅਤੇ ਫਿਰ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।',
+    att_saving:       '⏳ ਸੁਰੱਖਿਅਤ ਕਰ ਰਹੇ ਹਾਂ…',
+    att_submit:       '✅ {ml} ਦੀ ਹਾਜ਼ਰੀ ਜਮ੍ਹਾਂ ਕਰੋ',
+    att_days_off_col: 'ਛੁੱਟੀਆਂ',
+    att_full_p_str:   '✓ ਪੂਰੀ ਹਾਜ਼ਰੀ',
+    att_day_off_str:  '⚠ {d} ਦਿਨ ਛੁੱਟੀ',
+    att_prorata:      '🆕 {day} {mon} ਨੂੰ ਜੁੜੇ — ਪ੍ਰੋ-ਰਾਟਾ',
     // Visitor form
     vis_name:         'ਵਿਜ਼ਿਟਰ ਦਾ ਨਾਮ *',
     vis_phone:        'ਫ਼ੋਨ ਨੰਬਰ * ਲਾਜ਼ਮੀ',
@@ -6367,11 +6454,11 @@ function AttApp(){
     <div style=${{maxWidth:500,margin:'0 auto',padding:'36px 20px'}} class="fu">
       <div style=${{textAlign:'center',marginBottom:28}}>
         <div style=${{width:70,height:70,background:T.accS,border:`1.5px solid ${T.accB}`,borderRadius:22,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:32}}>📋</div>
-        <div style=${{fontSize:24,fontWeight:800,color:T.txt,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>Attendance Portal</div>
-        <div style=${{fontSize:13,color:T.sub,marginTop:6,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>Lotus International School — Supervisor System</div>
+        <div style=${{fontSize:24,fontWeight:800,color:T.txt,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>${_t('att_portal')}</div>
+        <div style=${{fontSize:13,color:T.sub,marginTop:6,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>${_t('att_subtitle')}</div>
       </div>
       <div style=${{background:T.card,border:`1px solid ${T.bdr}`,borderRadius:18,padding:22,marginBottom:14}}>
-        <div style=${{fontSize:10,fontWeight:700,color:T.sub,letterSpacing:1.2,marginBottom:18,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>FIREBASE SETUP (EK BAAR)</div>
+        <div style=${{fontSize:10,fontWeight:700,color:T.sub,letterSpacing:1.2,marginBottom:18,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>${_t('att_setup_title')}</div>
         <div style=${{marginBottom:14}}>
           <label style=${{fontSize:11,color:T.sub,fontWeight:700,display:'block',marginBottom:6,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>API KEY</label>
           <input value=${apiKey} onInput=${e=>setApiKey(e.target.value)} placeholder="AIzaSy..." style=${ist}
@@ -6385,11 +6472,11 @@ function AttApp(){
         ${connErr&&aHtml`<div style=${{background:T.redS,border:`1px solid ${T.red}44`,borderRadius:9,padding:'10px 13px',fontSize:13,color:T.red,marginBottom:14,fontWeight:600,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>${connErr}</div>`}
         <button onClick=${handleConnect} disabled=${connecting}
           style=${{background:`linear-gradient(135deg,${T.acc},${T.accAlt})`,color:'#fff',border:'none',borderRadius:12,padding:'14px',fontSize:15,fontWeight:700,cursor:connecting?'not-allowed':'pointer',width:'100%',fontFamily:"'Plus Jakarta Sans',sans-serif",opacity:connecting?.6:1,boxShadow:`0 4px 20px ${T.accS}`}}>
-          ${connecting?'Connecting…':'Connect & Start →'}
+          ${connecting?_t('att_connecting'):_t('att_connect_btn')}
         </button>
       </div>
       <div style=${{background:T.accS,border:`1px solid ${T.accB}`,borderRadius:14,padding:15}}>
-        <div style=${{fontSize:11,fontWeight:700,color:T.acc,marginBottom:10,fontFamily:"'Plus Jakarta Sans',sans-serif",letterSpacing:.5}}>ℹ️ CREDENTIALS KAISE MILENGE?</div>
+        <div style=${{fontSize:11,fontWeight:700,color:T.acc,marginBottom:10,fontFamily:"'Plus Jakarta Sans',sans-serif",letterSpacing:.5}}>${_t('att_cred_how')}</div>
         ${['Open StaffFlow app','Settings → Sync section','Copy Firebase apiKey and Database URL','Paste them here — one-time setup'].map((t,i)=>aHtml`
           <div key=${i} style=${{display:'flex',gap:10,marginBottom:8}}>
             <span style=${{color:T.acc,fontSize:12,fontWeight:800,minWidth:16,fontFamily:"'JetBrains Mono',monospace"}}>${i+1}.</span>
@@ -6445,7 +6532,7 @@ function AttApp(){
             ${!hf.includes('salary')&&s.salary&&aHtml`<div style=${{fontSize:10,color:T.sub,fontFamily:MN,marginTop:2}}>💰 ₹${s.salary}</div>`}
             ${!hf.includes('join')&&jd&&!isNewJoin&&aHtml`<div style=${{fontSize:10,color:T.mut,fontFamily:MN,marginTop:2}}>📅 Joined ${jd.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>`}
             <div style=${{fontSize:10,fontWeight:700,marginTop:5,color:isOff?T.yel:T.grn,fontFamily:MO}}>
-              ${isOff?`⚠ ${d} day off`:'✓ Full Present'}
+              ${isOff?`${_t('att_day_off_str').replace('{d}',d)}`:_t('att_full_p_str')}
             </div>
           </div>
 
@@ -6502,7 +6589,7 @@ function AttApp(){
 
         ${!hf.includes('prorata')&&isNewJoin&&aHtml`
           <div style=${{marginTop:12,background:T.grnS,border:`1px solid ${T.grnB}`,borderRadius:10,padding:'8px 13px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style=${{fontSize:11,color:T.grn,fontWeight:700,fontFamily:MN}}>🆕 Joined ${joinDay} ${MONTHS_A[now.getMonth()]} — Pro-Rata</span>
+            <span style=${{fontSize:11,color:T.grn,fontWeight:700,fontFamily:MN}}>${_t('att_prorata').replace('{day}',joinDay).replace('{mon}',MONTHS_A[now.getMonth()])}</span>
             <span style=${{fontSize:12,fontWeight:800,color:T.grn,fontFamily:MO}}>${prd}/30 days</span>
           </div>`}
       </div>`;
@@ -6530,7 +6617,7 @@ function AttApp(){
       }}>
         <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,maxWidth:1100,margin:'0 auto 10px'}}>
           <div>
-            <div style=${{fontSize:isDesktop?22:19,fontWeight:800,color:T.txt,fontFamily:AD}}>📋 Staff Attendance</div>
+            <div style=${{fontSize:isDesktop?22:19,fontWeight:800,color:T.txt,fontFamily:AD}}>${_t('att_staff_title')}</div>
             <div style=${{fontSize:12,color:T.acc,fontWeight:700,marginTop:3,fontFamily:MO}}>${ml}</div>
           </div>
           <button onClick=${()=>{ if(typeof attOpenSettings!=='undefined') attOpenSettings(); }}
@@ -6541,7 +6628,7 @@ function AttApp(){
         </div>
         <!-- Stats badges -->
         <div style=${{display:'flex',gap:7,flexWrap:'wrap',maxWidth:1100,margin:'0 auto'}}>
-          ${totalAbsent>0&&aHtml`<span style=${{background:T.yelS,color:T.yel,border:`1px solid ${T.yel}44`,borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:700,fontFamily:AD}}>${totalAbsent} absent / days off</span>`}
+          ${totalAbsent>0&&aHtml`<span style=${{background:T.yelS,color:T.yel,border:`1px solid ${T.yel}44`,borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:700,fontFamily:AD}}>${_t('att_absent_badge').replace('{n}',totalAbsent)}</span>`}
           <button onClick=${loadData}
             style=${{background:'none',border:`1px solid ${T.bdr2}`,borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:700,cursor:'pointer',color:T.sub,fontFamily:AD,transition:'all .15s'}}
             onMouseEnter=${e=>{e.target.style.borderColor=T.acc;e.target.style.color=T.acc}}
@@ -6551,7 +6638,7 @@ function AttApp(){
 
       <!-- Tip bar -->
       <div style=${{background:T.accS,borderBottom:`1px solid ${T.bdr}`,padding:'8px 18px',fontSize:12,color:T.sub,fontFamily:MN}}>
-        ℹ️ Only <b style=${{color:T.txt}}>days off</b> to be mentioned — whosoever was present for the full month keep his day off as <b style=${{color:T.grn}}>0</b></div>
+        ${aHtml([_t('att_tip')])}</div>
 
       <!-- Staff Grid / List -->
       <div style=${{
@@ -6563,7 +6650,7 @@ function AttApp(){
         ${staff.length===0&&aHtml`
           <div style=${{textAlign:'center',padding:'70px 20px',color:T.mut}}>
             <div style=${{fontSize:52,marginBottom:16}}>👥</div>
-            <div style=${{fontSize:17,fontWeight:800,color:T.sub,marginBottom:8,fontFamily:AD}}>No Staff Member Found</div>
+            <div style=${{fontSize:17,fontWeight:800,color:T.sub,marginBottom:8,fontFamily:AD}}>${_t('att_no_staff')}</div>
             <div style=${{fontSize:13,lineHeight:1.7,marginBottom:24,fontFamily:MN,color:T.sub}}>
               Please add staff members in StaffFlow App and then refresh.
             </div>
@@ -6613,7 +6700,7 @@ function AttApp(){
               transition:'all .2s',
               boxShadow:(saving||staff.length===0)?'none':`0 6px 28px ${T.accS}`
             }}>
-            ${saving?'⏳ Saving…':`✅ Submit ${ml} Attendance`}
+            ${saving?_t('att_saving'):_t('att_submit').replace('{ml}',ml)}
           </button>
         </div>
       </div>
@@ -7342,7 +7429,7 @@ function btRenderEvening(){
       : remaining===0 ? '✅ 0'
       : remaining > 0 ? `⚠️ ${remaining}`
       : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span>`;
-    const remLabel = remaining !== null && remaining < 0 ? '🔴 OVER' : _t('bt_remaining');
+    const remLabel = remaining !== null && remaining < 0 ? _t('bt_over') : _t('bt_remaining');
     const remLabelStyle = remaining !== null && remaining < 0 ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : '';
 
     const isMatch  = expected > 0 && remaining === 0;
@@ -7541,7 +7628,7 @@ function btSetBusEve(idx, val){
     const remLbl = remCard.querySelector('.bt-mini-label');
     if(remLbl){
       const isOver = remaining !== null && remaining < 0;
-      remLbl.textContent = isOver ? '🔴 OVER' : _t('bt_remaining');
+      remLbl.textContent = isOver ? _t('bt_over') : _t('bt_remaining');
       remLbl.style.cssText = isOver ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : '';
     }
   }
