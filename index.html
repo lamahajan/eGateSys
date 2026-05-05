@@ -5623,6 +5623,7 @@ const _T = {
     att_full_p_str:   _t('att_full_p_str'),
     att_day_off_str:  '⚠ {d} day off',
     att_prorata:      '🆕 Joined {day} {mon} — Pro-Rata',
+    months:           ['January','February','March','April','May','June','July','August','September','October','November','December'],
     // Visitor form
     vis_name:         'Visitor Name *',
     vis_phone:        'Phone Number * required',
@@ -5799,6 +5800,7 @@ const _T = {
     att_full_p_str:   '✓ पूर्ण उपस्थित',
     att_day_off_str:  '⚠ {d} दिन छुट्टी',
     att_prorata:      '🆕 {day} {mon} को जोड़े — प्रो-राटा',
+    months:           ['जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'],
     // Visitor form
     vis_name:         'विज़िटर का नाम *',
     vis_phone:        'फोन नंबर * आवश्यक',
@@ -5975,6 +5977,7 @@ const _T = {
     att_full_p_str:   '✓ ਪੂਰੀ ਹਾਜ਼ਰੀ',
     att_day_off_str:  '⚠ {d} ਦਿਨ ਛੁੱਟੀ',
     att_prorata:      '🆕 {day} {mon} ਨੂੰ ਜੁੜੇ — ਪ੍ਰੋ-ਰਾਟਾ',
+    months:           ['ਜਨਵਰੀ','ਫ਼ਰਵਰੀ','ਮਾਰਚ','ਅਪ੍ਰੈਲ','ਮਈ','ਜੂਨ','ਜੁਲਾਈ','ਅਗਸਤ','ਸਤੰਬਰ','ਅਕਤੂਬਰ','ਨਵੰਬਰ','ਦਸੰਬਰ'],
     // Visitor form
     vis_name:         'ਵਿਜ਼ਿਟਰ ਦਾ ਨਾਮ *',
     vis_phone:        'ਫ਼ੋਨ ਨੰਬਰ * ਲਾਜ਼ਮੀ',
@@ -6244,7 +6247,7 @@ function visExportCSV(){
 const aHtml = htm.bind(React.createElement);
 const { useState: aUs, useEffect: aUe } = React;
 
-const MONTHS_A = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_A = ()=>_t('months');
 const ROLE_COLORS_A = ['#8B5CF6','#10B981','#3B82F6','#F59E0B','#EF4444','#06B6D4','#EC4899','#6366F1','#14B8A6','#F97316'];
 const aUid = () => Math.random().toString(36).slice(2,10);
 const aTodayStr = () => new Date().toISOString().slice(0,10);
@@ -6350,7 +6353,7 @@ function AttApp(){
     if(effMon===0){ effMon=12; effYr-=1; }
   }
   const mk = `${effYr}_${effMon}`;
-  const ml = `${MONTHS_A[effMon-1]} ${effYr}`;
+  const ml = `${MONTHS_A()[effMon-1]} ${effYr}`;
   const ist = aISt(T);
 
   const showMsg = (m,type='ok') => { setToast({m,type}); setTimeout(()=>setToast(null),2800); };
@@ -6589,7 +6592,7 @@ function AttApp(){
 
         ${!hf.includes('prorata')&&isNewJoin&&aHtml`
           <div style=${{marginTop:12,background:T.grnS,border:`1px solid ${T.grnB}`,borderRadius:10,padding:'8px 13px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style=${{fontSize:11,color:T.grn,fontWeight:700,fontFamily:MN}}>${_t('att_prorata').replace('{day}',joinDay).replace('{mon}',MONTHS_A[now.getMonth()])}</span>
+            <span style=${{fontSize:11,color:T.grn,fontWeight:700,fontFamily:MN}}>${_t('att_prorata').replace('{day}',joinDay).replace('{mon}',MONTHS_A()[now.getMonth()])}</span>
             <span style=${{fontSize:12,fontWeight:800,color:T.grn,fontFamily:MO}}>${prd}/30 days</span>
           </div>`}
       </div>`;
