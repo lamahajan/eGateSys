@@ -6184,6 +6184,7 @@ function setLang(code) {
   window.LANG = code;
   try { localStorage.setItem('lis_lang', code); } catch(e) {}
   applyLang();
+  window.dispatchEvent(new CustomEvent('lis_langchange'));
 }
 
 function initLang() {
@@ -6358,11 +6359,15 @@ function AttApp(){
 
   const showMsg = (m,type='ok') => { setToast({m,type}); setTimeout(()=>setToast(null),2800); };
 
-  // Listen to theme changes
+  // Listen to theme + language changes
   aUe(() => {
     const handler = () => forceUpdate(n=>n+1);
     window.addEventListener('lis_themechange', handler);
-    return () => window.removeEventListener('lis_themechange', handler);
+    window.addEventListener('lis_langchange', handler);
+    return () => {
+      window.removeEventListener('lis_themechange', handler);
+      window.removeEventListener('lis_langchange', handler);
+    };
   }, []);
 
   aUe(()=>{
