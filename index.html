@@ -1522,6 +1522,16 @@ body.dark {
 .bt-mini-grid-5 .bt-mini-disp { font-size: 16px; }
 .bt-mini-grid-5 .bt-mini-card.c-remain-ok  .bt-mini-disp { font-size: 14px; }
 .bt-mini-grid-5 .bt-mini-card.c-remain-bad .bt-mini-disp { font-size: 14px; }
+.bt-mini-grid-4 {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-top: 4px;
+}
+@media(max-width:520px){
+  .bt-mini-grid-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.bt-mini-grid-4 .bt-mini-num  { font-size: 18px; }
+.bt-mini-grid-4 .bt-mini-disp { font-size: 16px; }
 
 /* Self bus single-column layout */
 .bt-mini-grid-self {
@@ -7342,7 +7352,7 @@ function btRenderEvening(){
         <span class="bt-bus-name">${btE(bus.name)}${shifted?`<span style="font-size:9px;color:var(--amber);font-weight:700;margin-left:4px">(${_t('bt_shifted_lbl')})</span>`:''}</span>
         ${isMatch?`<span style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:12px;background:var(--bt-grn-l);color:var(--bt-grn);border:1px solid var(--bt-grn)">${_t('bt_match')}</span>`:''}
       </div>
-      <div class="bt-mini-grid-5">
+      <div class="bt-mini-grid-4">
         <div class="bt-mini-card c-expect">
           <div class="bt-mini-label">${_t('bt_expected')}</div>
           <div class="bt-mini-disp" id="btec-exp-${idx}">${expected > 0 ? expected : `<span class='bt-mini-disp muted'>—</span>`}</div>
