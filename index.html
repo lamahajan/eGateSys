@@ -3423,8 +3423,8 @@ function gGoTab(n,btn){
   document.querySelectorAll('.g-tb').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   if(n==='passes')gRenderPasses();
-  if(n==='morning'){ _btActiveTab='morn'; btLoad(); btRenderMorning(); btRenderSummary(); btCheckMatch(); }
-  if(n==='evening'){ _btActiveTab='eve'; btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch(); }
+  if(n==='morning'){ _btActiveTab='morn'; btLoad(); btRenderMorning(); btRenderSummary(); btCheckMatch(); if(_btFbCfg.url&&_btFbCfg.code) btFbPull(); }
+  if(n==='evening'){ _btActiveTab='eve'; btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch(); if(_btFbCfg.url&&_btFbCfg.code) btFbPull(); }
 }
 
 function gRenderPasses(){
@@ -7112,6 +7112,16 @@ function btFbStartSync(){
   btFbPull();
   _btFbSyncIv = setInterval(()=>btFbPull(), 10000);
 }
+
+// Restart sync when page becomes visible again (e.g. switching back from another app/tab)
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    if(_btFbCfg.url && _btFbCfg.code){
+      btFbPull(); // immediate pull on focus
+      if(!_btFbSyncIv) btFbStartSync(); // restart interval if it was cleared
+    }
+  }
+});
 
 window.addEventListener('load',function(){
   btFbLoadCfg();
