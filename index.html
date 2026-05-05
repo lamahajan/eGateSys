@@ -7341,7 +7341,9 @@ function btRenderEvening(){
       ? `<span class='bt-mini-disp muted'>—</span>`
       : remaining===0 ? '✅ 0'
       : remaining > 0 ? `⚠️ ${remaining}`
-      : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span><br><span style="background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;letter-spacing:.5px">OVER</span>`;
+      : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span>`;
+    const remLabel = remaining !== null && remaining < 0 ? '🔴 OVER' : _t('bt_remaining');
+    const remLabelStyle = remaining !== null && remaining < 0 ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : '';
 
     const isMatch  = expected > 0 && remaining === 0;
     const outerCls = isMatch ? 'all-match' : (shifted ? 'shifted' : '');
@@ -7374,7 +7376,7 @@ function btRenderEvening(){
           <div class="bt-mini-disp" style="${hasShift?'font-size:11px;line-height:1.4':''}">${shiftDisplay}</div>
         </div>
         <div class="bt-mini-card ${remClass}" id="btec-rem-card-${idx}">
-          <div class="bt-mini-label" style="${remaining !== null && remaining < 0 ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : ''}">${remaining !== null && remaining < 0 ? '🔴 OVER' : _t('bt_remaining')}</div>
+          <div class="bt-mini-label" style="${remLabelStyle}">${remLabel}</div>
           <div class="bt-mini-disp" id="btec-rem-${idx}">${remText}</div>
         </div>
       </div>
@@ -7534,7 +7536,14 @@ function btSetBusEve(idx, val){
     remEl.innerHTML   = remaining===null
       ? `<span class='bt-mini-disp muted'>—</span>`
       : remaining===0 ? '✅ 0'
-      : remaining > 0 ? `⚠️ ${remaining}` : `+${Math.abs(remaining)}`;
+      : remaining > 0 ? `⚠️ ${remaining}`
+      : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span>`;
+    const remLbl = remCard.querySelector('.bt-mini-label');
+    if(remLbl){
+      const isOver = remaining !== null && remaining < 0;
+      remLbl.textContent = isOver ? '🔴 OVER' : _t('bt_remaining');
+      remLbl.style.cssText = isOver ? 'color:#dc2626;font-weight:800;letter-spacing:.5px' : '';
+    }
   }
   if(outerCard){
     const isMatch = expected > 0 && remaining === 0;
