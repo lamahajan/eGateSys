@@ -7330,7 +7330,8 @@ function btRenderEvening(){
     const remText  = remaining===null
       ? `<span class='bt-mini-disp muted'>—</span>`
       : remaining===0 ? '✅ 0'
-      : remaining > 0 ? `⚠️ ${remaining}` : `+${Math.abs(remaining)}`;
+      : remaining > 0 ? `⚠️ ${remaining}`
+      : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span><br><span style="background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;letter-spacing:.5px">OVER</span>`;
 
     const isMatch  = expected > 0 && remaining === 0;
     const outerCls = isMatch ? 'all-match' : (shifted ? 'shifted' : '');
@@ -7374,7 +7375,22 @@ function btRenderEvening(){
   const t = document.getElementById('bt-eve-total');
   if(t){ let tot=0; BT_DATA.buses.forEach(b=>tot+=b.evening||0); t.textContent=tot; }
   const tc = document.getElementById('bt-tab-eve-cnt');
-  if(tc){ let tot=0; BT_DATA.buses.forEach(b=>tot+=b.evening||0); tc.textContent=tot>0?`(${tot})`:''; }
+  if(tc){
+    const todayStr = btTodayStr();
+    const gpCnt = (typeof GS !== 'undefined' && GS.passes)
+      ? GS.passes.filter(p => p.date === todayStr).length : 0;
+    let eTot=0; BT_DATA.buses.forEach(b=>eTot+=b.evening||0);
+    const eveTotal = eTot + gpCnt;
+    let mTot=0; BT_DATA.buses.forEach(b=>{ mTot+=b.morning||0; mTot+=b.parentMorning||0; });
+    const isOver = mTot > 0 && eveTotal > mTot;
+    if(eveTotal > 0){
+      tc.innerHTML = isOver
+        ? `(${eveTotal}) <span style="background:#dc2626;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px;letter-spacing:.4px;vertical-align:middle">OVER</span>`
+        : `(${eveTotal})`;
+    } else {
+      tc.textContent = '';
+    }
+  }
 }
 
 function btRenderSummary(){
