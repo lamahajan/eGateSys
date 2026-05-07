@@ -3406,8 +3406,9 @@ async function gPush(k){
   let val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
   try{
     if(k==='passes'){
-      await fetch(`${gCfg.url}/${gCfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(GS.lastMod)});
+      // gPunchOut ab /gateout/ node use karta hai — yahan pass kabhi nahi aayega
+      // Buses ya doosre keys ke liye normal PATCH
+      await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lastMod:GS.lastMod})});
     } else {
       await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
     }
@@ -3738,8 +3739,25 @@ async function gPunchOut(id){
   const p=GS.passes.find(x=>x.id===id);if(!p||p.gateOutTime)return;
   const busSel=document.getElementById('gbus-upd-'+id);
   if(busSel&&busSel.value&&busSel.value!==p.busNumber)p.busNumber=busSel.value;
-  p.gateOutTime=gNowT();p._ts=Date.now();if(p._ts>gSyncTs)gSyncTs=p._ts; // incremental fetch ke liye _ts update
-  await gPush('passes');
+  p.gateOutTime=gNowT();p._ts=Date.now();if(p._ts>gSyncTs)gSyncTs=p._ts;
+  // Sirf /gateout/ node pe likhte hain — full passes array touch nahi karte
+  // Index app fetchAll mein yeh padhega aur merge karega
+  if(gCfg.url&&gCfg.code){
+    try{
+      await fetch(`${gCfg.url}/${gCfg.code}/gateout/${id}.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({gateOutTime:p.gateOutTime,busNumber:p.busNumber||'',_ts:p._ts})
+      });
+      await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(Date.now())
+      });
+      gSetSS('ok');
+    }catch(e){gSetSS('err');}
+  }
+  gSaveLocal();
   gToast(`✅ Gate Out: ${p.studentName} at ${p.gateOutTime}${p.busNumber?' · '+p.busNumber:''}`);
   gRenderPasses();
   if(!window.gOpenPassCards)window.gOpenPassCards={};
