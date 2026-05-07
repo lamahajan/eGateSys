@@ -955,6 +955,7 @@ code{background:var(--green-l);color:var(--green);padding:1px 6px;border-radius:
 #g-toast.inf{border-color:var(--blue);color:var(--blue);}
 
 /* Gate photo strip */
+@keyframes gphspin{from{opacity:1}50%{opacity:.4}to{opacity:1}}
 .g-photo-strip { display:flex; align-items:center; gap:8px; padding:6px 13px 8px; border-bottom:1px solid var(--border); }
 .g-photo-thumb { width:52px; height:52px; object-fit:cover; border-radius:9px; border:2px solid var(--green); cursor:zoom-in; flex-shrink:0; box-shadow:var(--sha); transition:transform .15s,box-shadow .15s; }
 .g-photo-thumb:hover { transform:scale(1.06); box-shadow:var(--sha-md); }
@@ -3509,6 +3510,39 @@ function gRenderPasses(){
     document.getElementById('g-sec-out').innerHTML=(!pending.length)
       ?`<div class="empty"><div class="ei">🚪</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--muted)">No passes issued today.</div></div>`:'';
   }
+  // Auto-load missing photos in background
+  gAutoLoadPhotos();
+}
+
+function gAutoLoadPhotos(){
+  if(!gCfg.url||!gCfg.code)return;
+  const today=gTodayStr();
+  const missing=GS.passes.filter(p=>p.date===today&&(p._hasPhoto||(p.pickerPhoto==='__has_photo'))&&(!p.pickerPhoto||p.pickerPhoto==='__has_photo'));
+  missing.forEach(async p=>{
+    // Check localStorage cache first
+    const cached=localStorage.getItem('gp_photo_'+p.id);
+    if(cached){p.pickerPhoto=cached;gUpdatePhotoThumb(p);return;}
+    // Fetch from Firebase /photos/ node
+    try{
+      const r=await fetch(`${gCfg.url}/${gCfg.code}/photos/${p.id}.json`);
+      if(!r.ok)return;
+      const ph=await r.json();
+      if(ph&&typeof ph==='string'&&ph.length>10){
+        p.pickerPhoto=ph;
+        try{localStorage.setItem('gp_photo_'+p.id,ph);}catch(e){}
+        gUpdatePhotoThumb(p);
+      }
+    }catch(e){}
+  });
+}
+
+function gUpdatePhotoThumb(p){
+  const el=document.getElementById('gph-'+p.id);
+  if(!el)return;
+  el.outerHTML=`<img src="${p.pickerPhoto}"
+    onclick="gShowPhoto('${p.id}')"
+    style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:2px solid var(--green);cursor:zoom-in;flex-shrink:0;box-shadow:var(--sha)"
+    title="Tap to enlarge">`;
 }
 
 function gBtoid(bus){return bus.replace(/[^a-z0-9]/gi,'_');}
@@ -3516,13 +3550,22 @@ function gBtoid(bus){return bus.replace(/[^a-z0-9]/gi,'_');}
 function gPassCard(p){
   const isOut=!!p.gateOutTime;
 
-  // Thumb: real photo or emoji placeholder
-  const thumbHtml = p.pickerPhoto
-    ? `<img src="${p.pickerPhoto}"
+  // Thumb: real photo, auto-loading spinner, or no-photo emoji
+  const _hasPhotoFlag = p._hasPhoto || (p.pickerPhoto === '__has_photo');
+  const _realPhoto    = p.pickerPhoto && p.pickerPhoto !== '__has_photo' ? p.pickerPhoto : null;
+  const thumbHtml = _realPhoto
+    ? `<img src="${_realPhoto}"
         onclick="gShowPhoto('${p.id}')"
         style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:2px solid var(--green);cursor:zoom-in;flex-shrink:0;box-shadow:var(--sha)"
         title="Tap to enlarge">`
-    : `<div style="width:44px;height:44px;border-radius:8px;border:2px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🧑</div>`;
+    : _hasPhotoFlag
+      ? `<div id="gph-${p.id}"
+            style="width:44px;height:44px;border-radius:8px;border:2px solid var(--green);background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;animation:gphspin 1s linear infinite">
+            ⏳
+         </div>`
+      : `<div style="width:44px;height:44px;border-radius:8px;border:2px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🧑</div>`;
+  // Auto-fetch photo if not loaded yet
+  if(_hasPhotoFlag&&!_realPhoto) setTimeout(()=>gAutoLoadPhoto('${p.id}'),0);
 
   return `<div class="card" id="gcard-${p.id}">
 
@@ -3542,7 +3585,7 @@ function gPassCard(p){
     <div style="display:flex;align-items:center;gap:9px;padding:7px 11px 9px;border-top:1px solid var(--border);background:var(--bg3)">
       ${thumbHtml}
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-        <div style="font-size:9px;font-weight:700;color:${p.pickerPhoto?'var(--green)':'var(--sub)'};text-transform:uppercase;letter-spacing:.6px;font-family:var(--sans)">${p.pickerPhoto?'📷 Picker Photo':'👤 Picker'}</div>
+        <div style="font-size:9px;font-weight:700;color:${(_realPhoto||_hasPhotoFlag)?'var(--green)':'var(--sub)'};text-transform:uppercase;letter-spacing:.6px;font-family:var(--sans)">${_realPhoto?'📷 Picker Photo':_hasPhotoFlag?'📷 Loading…':'👤 Picker'}</div>
         <div style="font-size:11px;font-weight:700;color:var(--text);font-family:var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gE(p.pickedUpBy)}${p.relation?` <span style="font-weight:400;color:var(--sub);font-size:10px">(${gE(p.relation)})</span>`:''}</div>
         ${!isOut && gBusEditEnabled()
           ? `<select id="gbus-upd-${p.id}" class="sel" style="font-size:11px;padding:3px 6px;border-radius:7px;margin-top:1px">
@@ -3565,14 +3608,45 @@ function gPassCard(p){
 }
 
 // ── Photo lightbox ──
+const _gPhotoFetching=new Set(); // prevent duplicate fetches
+async function gAutoLoadPhoto(passId){
+  if(_gPhotoFetching.has(passId))return;
+  const p=GS.passes.find(x=>x.id===passId);
+  if(!p)return;
+  if(p.pickerPhoto&&p.pickerPhoto!=='__has_photo')return; // already loaded
+  // Check localStorage cache first
+  try{const cached=localStorage.getItem('gp_photo_'+passId);if(cached){p.pickerPhoto=cached;gUpdatePhotoThumb(passId,cached);return;}}catch(e){}
+  if(!gCfg.url||!gCfg.code)return;
+  _gPhotoFetching.add(passId);
+  try{
+    const r=await fetch(`${gCfg.url}/${gCfg.code}/photos/${passId}.json`);
+    if(r.ok){
+      const ph=await r.json();
+      if(ph&&typeof ph==='string'&&ph.length>10){
+        p.pickerPhoto=ph;
+        try{localStorage.setItem('gp_photo_'+passId,ph);}catch(e){}
+        gUpdatePhotoThumb(passId,ph);
+      }
+    }
+  }catch(e){}
+  _gPhotoFetching.delete(passId);
+}
+function gUpdatePhotoThumb(passId,photoData){
+  const el=document.getElementById('gph-'+passId);
+  if(!el)return;
+  el.outerHTML=`<img src="${photoData}" onclick="gShowPhoto('${passId}')"
+    style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:2px solid var(--green);cursor:zoom-in;flex-shrink:0;box-shadow:var(--sha)"
+    title="Tap to enlarge">`;
+}
 function gShowPhoto(passId){
   const p=GS.passes.find(x=>x.id===passId);
-  if(!p||!p.pickerPhoto)return;
+  const photo=p&&p.pickerPhoto&&p.pickerPhoto!=='__has_photo'?p.pickerPhoto:null;
+  if(!photo){gAutoLoadPhoto(passId);return;}
   const ol=document.getElementById('g-photo-overlay');
   const img=document.getElementById('g-photo-big');
   const lbl=document.getElementById('g-photo-lbl');
   if(ol&&img){
-    img.src=p.pickerPhoto;
+    img.src=photo;
     if(lbl)lbl.textContent=`${p.pickedUpBy}${p.relation?' ('+p.relation+')':''} — picking up ${p.studentName} (Class ${p.class})`;
     ol.style.display='flex';
     document.body.style.overflow='hidden';
