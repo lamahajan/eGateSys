@@ -3305,6 +3305,11 @@ async function gFetchAll(){
     function gMergePassesFromFirebase(todayFromFirebase){
       todayFromFirebase.forEach(np=>{
         const idx=GS.passes.findIndex(x=>x.id===np.id);
+        // Restore locally cached photo before merge
+        if(np._hasPhoto&&!np.pickerPhoto){
+          const cached=localStorage.getItem('gp_photo_'+np.id);
+          if(cached)np.pickerPhoto=cached;
+        }
         if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
         else GS.passes.push(np);
       });
@@ -3358,6 +3363,24 @@ async function gFetchAll(){
 
     gLocalMod=sm||0;
     gSaveLocal();gRenderPasses();
+    // Fetch missing photos from /photos/ node (set by index app)
+    const _gToday=gTodayStr();
+    const _gYest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    GS.passes
+      .filter(p=>p._hasPhoto&&!p.pickerPhoto&&(p.date===_gToday||p.date===_gYest))
+      .slice(0,10)
+      .forEach(async p=>{
+        try{
+          const r=await fetch(`${gCfg.url}/${gCfg.code}/photos/${p.id}.json`);
+          if(!r.ok)return;
+          const ph=await r.json();
+          if(ph&&typeof ph==='string'&&ph.length>10){
+            p.pickerPhoto=ph;
+            try{localStorage.setItem('gp_photo_'+p.id,ph);}catch(e){}
+            gRenderPasses();
+          }
+        }catch(e){}
+      });
     if(document.getElementById('g-set-ct')?.style.display!=='none')gRenderBuses();
     gSetSS('ok');gUpdBadge();
     if(typeof homeUpdateBusTally==='function')homeUpdateBusTally();
@@ -3379,9 +3402,14 @@ async function gPush(k){
   // fresh lastMod compare ho aur eAcademics ki concurrent passes miss na hon.
   // gLocalMod sirf successful gFetchAll ke baad update hoga.
   gSetSS('ing');
-  const val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
+  let val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
   try{
-    await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
+    if(k==='passes'){
+      await fetch(`${gCfg.url}/${gCfg.code}/passes.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      await fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(GS.lastMod)});
+    } else {
+      await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
+    }
     gSetSS('ok');
     // Push ke baad turant ek fresh fetch — concurrent passes pick up ho jaati hain
     setTimeout(gFetchAll,800);
