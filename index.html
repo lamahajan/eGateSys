@@ -3445,7 +3445,40 @@ function gSetSS(st){
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
 }
-function gStartSync(){gSetSS('ing');gFetchAll();if(gSyncIv)clearInterval(gSyncIv);gSyncIv=setInterval(gFetchAll,gSyncIntervalSec*1000);}
+function gStartSync(){gSetSS('ing');gFetchAll();if(gSyncIv)clearInterval(gSyncIv);gSyncIv=setInterval(gFetchAll,gSyncIntervalSec*1000);gStartGateOutPoller();}
+
+// ── Fast GateOut Poller ──────────────────────────────────────────────────────
+// Sirf /gateout/ node ko har 3s pe check karo — full fetch se zyada fast
+// Doosre Gate device ka gateOut isi se turant dikhega bina pura cycle wait kiye
+let _goPollerIv=null, _goLastKnown={};
+function gStartGateOutPoller(){
+  if(_goPollerIv)clearInterval(_goPollerIv);
+  _goPollerIv=setInterval(gPollGateOut, 3000);
+}
+async function gPollGateOut(){
+  if(!gCfg.url||!gCfg.code)return;
+  try{
+    const r=await fetch(`${gCfg.url}/${gCfg.code}/gateout.json`);
+    if(!r.ok)return;
+    const goData=await r.json();
+    if(!goData||typeof goData!=='object')return;
+    let changed=false;
+    Object.entries(goData).forEach(([pid,rec])=>{
+      if(!rec||!rec.gateOutTime)return;
+      // Naya gateOut jo pehle nahi tha
+      if(_goLastKnown[pid]===rec.gateOutTime)return;
+      _goLastKnown[pid]=rec.gateOutTime;
+      const p=GS.passes.find(x=>x.id===pid);
+      if(p&&!p.gateOutTime){
+        p.gateOutTime=rec.gateOutTime;
+        if(rec.busNumber)p.busNumber=rec.busNumber;
+        if(rec._ts)p._ts=rec._ts;
+        changed=true;
+      }
+    });
+    if(changed){gSaveLocal();gRenderPasses();}
+  }catch(e){}
+}
 // Tab foreground mein aane par sirf gFetchAll — gLocalMod reset mat karo
 // lastMod comparison khud handle karega ki full/incremental chahiye ya kuch nahi
 document.addEventListener('visibilitychange',()=>{
