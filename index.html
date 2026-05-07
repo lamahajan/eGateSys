@@ -3321,11 +3321,30 @@ async function gFetchAll(){
     }
 
     async function gFullFetch(){
-      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json`);
+      // Passes aur gateout node ek saath fetch karo
+      const [pr, gor] = await Promise.all([
+        fetch(`${gCfg.url}/${gCfg.code}/passes.json`),
+        fetch(`${gCfg.url}/${gCfg.code}/gateout.json`)
+      ]);
       if(!pr.ok) return;
       const raw=await pr.json();
       if(raw&&raw.error) throw new Error('Firebase: '+raw.error);
-      gMergePassesFromFirebase(toArr(raw).filter(p=>p&&p.id&&p.date===today));
+      const todayPasses=toArr(raw).filter(p=>p&&p.id&&p.date===today);
+      // gateout node se gateOutTime merge karo (dono Gate devices sync rehti hain)
+      if(gor.ok){
+        const goData=await gor.json();
+        if(goData&&typeof goData==='object'){
+          todayPasses.forEach(p=>{
+            const rec=goData[p.id];
+            if(rec&&rec.gateOutTime&&!p.gateOutTime){
+              p.gateOutTime=rec.gateOutTime;
+              if(rec.busNumber)p.busNumber=rec.busNumber;
+              if(rec._ts)p._ts=rec._ts;
+            }
+          });
+        }
+      }
+      gMergePassesFromFirebase(todayPasses);
     }
 
     // ✅ FIX: lastMod change pe bhi full fetch — sirf incremental pe rely nahi karte
