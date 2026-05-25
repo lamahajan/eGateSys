@@ -3565,6 +3565,8 @@ function gRenderPasses(){
   }
   // Auto-load missing photos in background
   gAutoLoadPhotos();
+  // Bus Tally mein GP counts auto-update karo
+  if(typeof btRefreshGPCounts === 'function') btRefreshGPCounts();
 }
 
 function gAutoLoadPhotos(){
@@ -7423,7 +7425,7 @@ async function btFbPull(force){
 function btFbStartSync(){
   if(_btFbSyncIv) clearInterval(_btFbSyncIv);
   btFbPull();
-  _btFbSyncIv = setInterval(()=>btFbPull(), 10000);
+  _btFbSyncIv = setInterval(()=>btFbPull(), 5000);
 }
 
 // Restart sync when page becomes visible again (e.g. switching back from another app/tab)
@@ -7487,6 +7489,10 @@ function btSyncAndRender(){
   BT_DATA.buses = BT_DATA.buses.filter(b=>b.name&&validBuses.includes(b.name));
   if(BT_DATA.buses.length !== before) changed = true;
   if(changed){ btSave(); btRenderMorning(); btRenderEvening(); btRenderSummary(); btCheckMatch(); }
+  else {
+    // Bus list same hai, lekin GP counts refresh karo (new gatepasses aa sakte hain)
+    btRefreshGPCounts();
+  }
 }
 
 // ── Render both columns ──
@@ -7496,6 +7502,8 @@ function btRender(){
   btRenderSummary();
   btCheckMatch();
   homeUpdateBusTally();
+  // GP counts ensure latest hain
+  if(typeof btRefreshGPCounts === 'function') btRefreshGPCounts();
   // Update gp tab badge & content if tab is active
   if(_btActiveTab==='gp') btRenderGatepasses();
   else {
@@ -7512,9 +7520,48 @@ const btE = s=>String(s||'').replace(/&/g,'&amp;');
 function btGatepassCountForBus(busName){
   // Count today's gatepasses for this bus from GatePass app data
   if(typeof GS === 'undefined' || !GS.passes) return null;
+  if(!busName) return null; // empty busName pe count nahi
   const today = btTodayStr();
-  const passes = GS.passes.filter(p => p.date === today && (p.busNumber||'') === busName);
+  const passes = GS.passes.filter(p => p.date === today && p.busNumber && p.busNumber === busName);
   return passes.length;
+}
+
+// ── GP count auto-refresh: jab bhi GS.passes update ho, bus tally re-render karo ──
+function btRefreshGPCounts(){
+  // Sirf GP count wale cells update karo — pura re-render nahi (flicker avoid)
+  if(!BT_DATA.buses || !BT_DATA.buses.length) return;
+  BT_DATA.buses.forEach((bus, idx)=>{
+    // Evening GP cell
+    const gpCell = document.getElementById('btec-gp-'+idx);
+    if(gpCell){
+      const gpCount = btGatepassCountForBus(bus.name);
+      gpCell.innerHTML = gpCount !== null ? gpCount : `<span class='bt-mini-disp muted'>—</span>`;
+    }
+    // Evening remaining cell
+    const remCell  = document.getElementById('btec-rem-'+idx);
+    const remCard  = document.getElementById('btec-rem-card-'+idx);
+    if(remCell){
+      const { expected, count, gpVal, remaining } = btCalcEveRow(bus);
+      const remClass = remaining===null ? 'c-remain-neu' : remaining===0 ? 'c-remain-ok' : 'c-remain-bad';
+      const remText  = remaining===null
+        ? `<span class='bt-mini-disp muted'>—</span>`
+        : remaining===0 ? '✅ 0'
+        : remaining > 0 ? `⚠️ ${remaining}`
+        : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span>`;
+      remCell.innerHTML = remText;
+      if(remCard){ remCard.className='bt-mini-card '+remClass; }
+    }
+  });
+  // Summary + match bhi update karo
+  btRenderSummary();
+  btCheckMatch();
+  homeUpdateBusTally();
+  // GP tab badge update
+  const today = btTodayStr();
+  const passes = (typeof GS !== 'undefined' && GS.passes) ? GS.passes.filter(p=>p.date===today) : [];
+  const cntEl = document.getElementById('bt-tab-gp-cnt');
+  if(cntEl) cntEl.textContent = passes.length>0?`(${passes.length})`:'';
+  if(_btActiveTab==='gp') btRenderGatepasses();
 }
 
 function btRenderMorning(){
