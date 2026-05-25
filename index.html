@@ -8102,9 +8102,32 @@ const BT_TG_KEY = 'gp_tg_cfg';
 function btGetTgCfg(){ try{ const d=localStorage.getItem(BT_TG_KEY); return d?JSON.parse(d):{token:'',chatId:''}; }catch(e){ return {token:'',chatId:''}; } }
 
 // ── Manual Save + Telegram notify ──
+// ── Last-sent snapshot for duplicate prevention ──
+let _btLastSentHash = '';
+function btDataHash(){
+  // Sirf relevant fields ka lightweight hash — buses counts + tab
+  try{
+    const tab = _btActiveTab;
+    const snap = BT_DATA.buses.map(b=>({
+      n:b.name,
+      m:b.morning||0, pm:b.parentMorning||0,
+      e:b.evening||0,
+      st:JSON.stringify(b.shiftTo||[]),
+      sf:JSON.stringify(b.shiftFrom||[])
+    }));
+    return tab + '|' + JSON.stringify(snap) + '|' + JSON.stringify(BT_DATA.parent||{});
+  }catch(e){ return ''; }
+}
+
 function btManualSave(){
   btSave();
   btToast(_t('js_data_saved'),'ok');
+  const hash = btDataHash();
+  if(hash && hash === _btLastSentHash){
+    btToast('ℹ️ No change — message not sent','ok');
+    return;
+  }
+  _btLastSentHash = hash;
   btSendTelegram();
 }
 
@@ -8148,8 +8171,18 @@ async function btSendTelegram(){
       const shiftIn   = shiftFrE.reduce((s,e)=>s+(e.count||0),0);
       // Bus-wise gatepass count
       const gpC = btGatepassCountForBus(bus.name);
+      const gpVal = gpC || 0;
+      const mornBase = (bus.morning||0) + (bus.parentMorning||0);
+      const expected = mornBase - shiftOut + shiftIn;
+      const busTotal = c + gpVal;
+      const busDiff = expected > 0 ? expected - busTotal : null;
       let row = `🚌 *${bus.name}:* On Bus: ${c}`;
-      if(gpC > 0) row += ` (GP=${gpC}) | Total: ${c + gpC}`;
+      if(gpVal > 0) row += ` (GP=${gpVal}) | Total: ${busTotal}`;
+      if(busDiff !== null && expected > 0){
+        if(busDiff === 0)      row += ` ✅`;
+        else if(busDiff > 0)   row += ` ⚠️ _${busDiff} short_`;
+        else                   row += ` 🔴 _${Math.abs(busDiff)} extra_`;
+      }
       if(c===0 && !shiftIn && !shiftOut) row += ` _(absent)_`;
       lines.push(row);
       // Shift detail lines — who went where, how many
