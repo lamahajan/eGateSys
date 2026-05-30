@@ -3956,6 +3956,7 @@ async function gMetaExitSend(toPhone, pass){
   return data;
 }
 function gSendExitWA(pass){
+  gLoadWAExit();
   if(_gWAExitCfg.sendMode==='meta'&&_gWAExitCfg.metaPhoneId&&_gWAExitCfg.metaToken){
     const stu=GS.students.find(s=>s.admissionNumber===pass.admissionNumber);
     const pPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
