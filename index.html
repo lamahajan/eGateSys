@@ -3935,14 +3935,14 @@ async function gMetaExitSend(toPhone, pass){
   const d=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   let body;
   if(cfg.metaTemplate){
-    body={messaging_product:'whatsapp',to:phone,type:'template',template:{name:cfg.metaTemplate,language:{code:cfg.metaLang||'en_US'},components:[{type:'body',parameters:[
+    body={messaging_product:'whatsapp',to:'+'+phone,type:'template',template:{name:cfg.metaTemplate,language:{code:cfg.metaLang||'en_US'},components:[{type:'body',parameters:[
       {type:'text',parameter_name:'name',text:pass.studentName||'Student'},
       {type:'text',parameter_name:'class',text:pass.class||'N/A'},
       {type:'text',parameter_name:'gateout',text:pass.gateOutTime||''},
       {type:'text',parameter_name:'date',text:pass.date||d}
     ]}]}};
   } else {
-    body={messaging_product:'whatsapp',to:phone,type:'text',text:{body:gBuildExitMsg(pass,cfg.tmplParent)}};
+    body={messaging_product:'whatsapp',to:'+'+phone,type:'text',text:{body:gBuildExitMsg(pass,cfg.tmplParent)}};
   }
   const resp=await fetch('https://graph.facebook.com/v25.0/'+cfg.metaPhoneId+'/messages',{
     method:'POST',headers:{'Authorization':'Bearer '+cfg.metaToken,'Content-Type':'application/json'},body:JSON.stringify(body)
@@ -3988,7 +3988,7 @@ async function gTestExitWA(){
     const testPass={studentName:'Test Student',class:'X-A',gateOutTime:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),busNumber:'Bus 5',pickedUpBy:'Parent'};
     try{
       await gMetaExitSend(testPhone,testPass);
-      if(st){st.textContent='✅ Test sent to +'+testPhone.replace(/[^0-9]/g,'').slice(-10);st.style.color='#16a34a';}
+      if(st){st.textContent='✅ Test sent to +'+testPhone.replace(/[^0-9]/g,'');st.style.color='#16a34a';}
       gToast('✅ Gate-Out Meta WA test sent!');
     }catch(err){
       if(st){st.textContent='❌ '+err.message;st.style.color='#dc2626';}
@@ -5149,7 +5149,7 @@ async function visMetaSend(toPhone, entry, type){
       :[{type:'text',parameter_name:'name',text:entry.name||'Visitor'},{type:'text',parameter_name:'checkin',text:entry.checkIn||''},{type:'text',parameter_name:'checkout',text:entry.checkOut||''},{type:'text',parameter_name:'date',text:entry.checkInDate||''}];
     body={messaging_product:'whatsapp',to:phone,type:'template',template:{name:tmplName,language:{code:cfg.metaLang||'en_US'},components:[{type:'body',parameters:params}]}};
   } else {
-    body={messaging_product:'whatsapp',to:phone,type:'text',text:{body:visBuildWAMsg(entry,type==='in'?cfg.tmplIn:cfg.tmplOut,type)}};
+    body={messaging_product:'whatsapp',to:'+'+phone,type:'text',text:{body:visBuildWAMsg(entry,type==='in'?cfg.tmplIn:cfg.tmplOut,type)}};
   }
   const resp=await fetch('https://graph.facebook.com/v25.0/'+cfg.metaPhoneId+'/messages',{
     method:'POST',headers:{'Authorization':'Bearer '+cfg.metaToken,'Content-Type':'application/json'},body:JSON.stringify(body)
@@ -5194,7 +5194,7 @@ async function visTestWA(){
     if(st){st.textContent='⏳ Sending test…';st.style.color='#3b82f6';}
     try{
       await visMetaSend(testPhone,testEntry,'in');
-      if(st){st.textContent='✅ Test check-in sent to +'+testPhone.replace(/[^0-9]/g,'').slice(-10);st.style.color='#16a34a';}
+      if(st){st.textContent='✅ Test check-in sent to +'+testPhone.replace(/[^0-9]/g,'');st.style.color='#16a34a';}
       gToast('✅ Visitor Meta WA test sent!');
     }catch(err){
       if(st){st.textContent='❌ '+err.message;st.style.color='#dc2626';}
