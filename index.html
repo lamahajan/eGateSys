@@ -2153,24 +2153,41 @@ body.dark {
               </button>
               <div id="g-wa-body" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border)">
                 <div style="height:10px"></div>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-                  <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">
-                    <input type="checkbox" id="g-wa-exit-parent" style="accent-color:#25D366;width:16px;height:16px"> Notify parent on gate-out
-                  </label>
-                  <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">
-                    <input type="checkbox" id="g-wa-exit-admin" style="accent-color:#25D366;width:16px;height:16px"> Notify admin on gate-out
-                  </label>
+                <!-- Send Mode Toggle -->
+                <div style="margin-bottom:12px">
+                  <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.9px;margin-bottom:7px;font-family:var(--sans)">Send Mode</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+                    <label id="g-exit-wa-card-web" onclick="gExitSwitchMode('web')" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px solid #25D366;background:rgba(37,211,102,.08);cursor:pointer;transition:all .18s">
+                      <input type="radio" name="g-exit-wa-mode" id="g-exit-wa-mode-web" value="web" style="accent-color:#25D366;width:15px;height:15px;flex-shrink:0" checked>
+                      <div><div style="font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">WhatsApp Web</div><div style="font-size:10px;color:var(--sub);font-family:var(--sans)">Opens app directly</div></div>
+                    </label>
+                    <label id="g-exit-wa-card-meta" onclick="gExitSwitchMode('meta')" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;transition:all .18s">
+                      <input type="radio" name="g-exit-wa-mode" id="g-exit-wa-mode-meta" value="meta" style="accent-color:#25D366;width:15px;height:15px;flex-shrink:0">
+                      <div><div style="font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">Meta Cloud API</div><div style="font-size:10px;color:var(--sub);font-family:var(--sans)">Auto-sends via server</div></div>
+                    </label>
+                  </div>
                 </div>
-                <div style="margin-bottom:9px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">ADMIN NUMBER</label>
-                  <input id="g-wa-exit-admin-phone"
-                    style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box"
-                    placeholder="e.g. 919876543210"
-                    onfocus="this.style.borderColor='#25D366'" onblur="this.style.borderColor='var(--border)'"></div>
-                <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">PARENT MESSAGE TEMPLATE</label>
-                  <textarea id="g-wa-exit-tmpl-parent"
-                    style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box;resize:vertical"
-                    rows="4"
-                    onfocus="this.style.borderColor='#25D366'" onblur="this.style.borderColor='var(--border)'">Dear Parent,
+
+                <!-- WhatsApp Web section -->
+                <div id="g-exit-wa-web-section">
+                  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+                    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">
+                      <input type="checkbox" id="g-wa-exit-parent" style="accent-color:#25D366;width:16px;height:16px"> Notify parent on gate-out
+                    </label>
+                    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans)">
+                      <input type="checkbox" id="g-wa-exit-admin" style="accent-color:#25D366;width:16px;height:16px"> Notify admin on gate-out
+                    </label>
+                  </div>
+                  <div style="margin-bottom:9px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">ADMIN NUMBER</label>
+                    <input id="g-wa-exit-admin-phone"
+                      style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box"
+                      placeholder="e.g. 919876543210"
+                      onfocus="this.style.borderColor='#25D366'" onblur="this.style.borderColor='var(--border)'"></div>
+                  <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">PARENT MESSAGE TEMPLATE</label>
+                    <textarea id="g-wa-exit-tmpl-parent"
+                      style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box;resize:vertical"
+                      rows="4"
+                      onfocus="this.style.borderColor='#25D366'" onblur="this.style.borderColor='var(--border)'">Dear Parent,
 
 *{name}* (Class {class}) has exited the school gate.
 🕐 Gate Out: {gateout}
@@ -2179,10 +2196,41 @@ body.dark {
 
 Regards,
 *School Reception*</textarea>
-                  <div style="font-size:10px;color:var(--sub);margin-top:3px;font-family:var(--sans)">{name} {class} {gateout} {date} {bus} {pickedby}</div>
+                    <div style="font-size:10px;color:var(--sub);margin-top:3px;font-family:var(--sans)">{name} {class} {gateout} {date} {bus} {pickedby}</div>
+                  </div>
                 </div>
-                <button type="button" onclick="gSaveWAExit()"
-                  style="width:100%;padding:10px;background:#25D366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">💾 Save WhatsApp Settings</button>
+
+                <!-- Meta Cloud API section -->
+                <div id="g-exit-wa-meta-section" style="display:none">
+                  <div style="font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.9px;margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--border);font-family:var(--sans)">Meta WhatsApp Cloud API</div>
+                  <div style="margin-bottom:8px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">PHONE NUMBER ID</label>
+                    <input id="g-exit-meta-phone-id" style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box" placeholder="e.g. 1087560414445341"></div>
+                  <div style="margin-bottom:8px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">ACCESS TOKEN</label>
+                    <input id="g-exit-meta-token" type="password" style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box" placeholder="EAAxxxxx..."></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                    <div><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">TEMPLATE NAME</label>
+                      <input id="g-exit-meta-template" style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box" placeholder="e.g. gate_exit_alert"></div>
+                    <div><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">LANGUAGE</label>
+                      <input id="g-exit-meta-lang" style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box" placeholder="en_US" value="en_US"></div>
+                  </div>
+                  <div style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);border-radius:9px;padding:9px 11px;margin-bottom:9px;font-size:11px;color:#1d4ed8;font-family:var(--sans)">
+                    <b>Template params:</b> {{1}} name &nbsp;|&nbsp; {{2}} class &nbsp;|&nbsp; {{3}} gate-out time &nbsp;|&nbsp; {{4}} date
+                  </div>
+                  <div style="margin-bottom:8px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:5px;font-family:var(--sans)">ADMIN NUMBER <span style="font-weight:400">(optional)</span></label>
+                    <input id="g-exit-meta-admin-phone" style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;font-size:12px;color:var(--text);font-family:var(--mono);outline:none;box-sizing:border-box" placeholder="e.g. 919876543210"></div>
+                  <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);font-family:var(--sans);margin-bottom:10px">
+                    <input type="checkbox" id="g-exit-meta-admin-enabled" style="accent-color:#25D366;width:16px;height:16px"> Send admin alert via Meta API
+                  </label>
+                  <div id="g-exit-meta-status" style="font-size:11px;min-height:14px;margin-bottom:8px;color:var(--sub);font-family:var(--sans)"></div>
+                </div>
+
+                <!-- Save + Test -->
+                <div style="display:flex;gap:8px">
+                  <button type="button" onclick="gSaveWAExit()"
+                    style="flex:1;padding:10px;background:#25D366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">💾 Save</button>
+                  <button type="button" onclick="gTestExitWA()"
+                    style="padding:10px 14px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)">🧪 Test</button>
+                </div>
               </div>
             </div>
 
@@ -2587,56 +2635,122 @@ Regards,
               <div class="vis-scard-title">📱 WhatsApp Notifications</div>
               <div class="vis-scard-desc">Send app-based WhatsApp to visitor on check-in &amp; check-out.</div>
               <div id="vis-wa-status" style="font-size:11px;font-family:'JetBrains Mono',monospace;padding:6px 10px;background:var(--vis-bg3);border-radius:8px;border:1px solid var(--vis-bdr);color:var(--vis-sub);margin-bottom:10px">⚪ Not configured</div>
-              <!-- Visitor WA toggle -->
-              <div class="vis-settings-row" style="justify-content:space-between;margin-bottom:8px">
-                <div>
-                  <div style="font-size:13px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">Send to Visitor</div>
-                  <div style="font-size:11px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif;margin-top:2px">WhatsApp on check-in &amp; check-out</div>
+
+              <!-- Send Mode Toggle -->
+              <div style="margin-bottom:12px">
+                <div style="font-size:10px;font-weight:800;color:var(--vis-sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;font-family:'Plus Jakarta Sans',sans-serif">Send Mode</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+                  <label id="vis-wa-card-web" onclick="visSwitchSendMode('web')" style="display:flex;align-items:center;gap:8px;padding:10px 11px;border-radius:10px;border:2px solid #25D366;background:rgba(37,211,102,.07);cursor:pointer;transition:all .18s">
+                    <input type="radio" name="vis-wa-send-mode" id="vis-wa-mode-web" value="web" style="accent-color:#25D366;width:15px;height:15px;flex-shrink:0" checked>
+                    <div><div style="font-size:12px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">WhatsApp Web</div><div style="font-size:10px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif">Opens app directly</div></div>
+                  </label>
+                  <label id="vis-wa-card-meta" onclick="visSwitchSendMode('meta')" style="display:flex;align-items:center;gap:8px;padding:10px 11px;border-radius:10px;border:2px solid var(--vis-bdr);background:var(--vis-bg3);cursor:pointer;transition:all .18s">
+                    <input type="radio" name="vis-wa-send-mode" id="vis-wa-mode-meta" value="meta" style="accent-color:#25D366;width:15px;height:15px;flex-shrink:0">
+                    <div><div style="font-size:12px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">Meta Cloud API</div><div style="font-size:10px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif">Auto-sends via server</div></div>
+                  </label>
                 </div>
-                <label style="position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0;cursor:pointer">
-                  <input type="checkbox" id="vis-wa-enabled" style="opacity:0;width:0;height:0;position:absolute" onchange="visWaToggle('enabled',this.checked)">
-                  <span id="vis-wa-enabled-track" style="position:absolute;inset:0;border-radius:20px;background:var(--vis-bdr2);transition:background .2s"></span>
-                  <span id="vis-wa-enabled-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span>
-                </label>
               </div>
-              <!-- Admin WA toggle -->
-              <div class="vis-settings-row" style="justify-content:space-between;margin-bottom:8px">
-                <div>
-                  <div style="font-size:13px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">Send Admin Alert</div>
-                  <div style="font-size:11px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif;margin-top:2px">Notify admin on each check-in &amp; check-out</div>
+
+              <!-- WhatsApp Web section -->
+              <div id="vis-wa-web-section">
+                <!-- Visitor WA toggle -->
+                <div class="vis-settings-row" style="justify-content:space-between;margin-bottom:8px">
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">Send to Visitor</div>
+                    <div style="font-size:11px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif;margin-top:2px">WhatsApp on check-in &amp; check-out</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0;cursor:pointer">
+                    <input type="checkbox" id="vis-wa-enabled" style="opacity:0;width:0;height:0;position:absolute" onchange="visWaToggle('enabled',this.checked)">
+                    <span id="vis-wa-enabled-track" style="position:absolute;inset:0;border-radius:20px;background:var(--vis-bdr2);transition:background .2s"></span>
+                    <span id="vis-wa-enabled-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span>
+                  </label>
                 </div>
-                <label style="position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0;cursor:pointer">
-                  <input type="checkbox" id="vis-wa-admin-enabled" style="opacity:0;width:0;height:0;position:absolute" onchange="visWaToggle('adminEnabled',this.checked)">
-                  <span id="vis-wa-admin-track" style="position:absolute;inset:0;border-radius:20px;background:var(--vis-bdr2);transition:background .2s"></span>
-                  <span id="vis-wa-admin-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span>
-                </label>
+                <!-- Admin WA toggle -->
+                <div class="vis-settings-row" style="justify-content:space-between;margin-bottom:8px">
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif">Send Admin Alert</div>
+                    <div style="font-size:11px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif;margin-top:2px">Notify admin on each check-in &amp; check-out</div>
+                  </div>
+                  <label style="position:relative;display:inline-block;width:42px;height:22px;flex-shrink:0;cursor:pointer">
+                    <input type="checkbox" id="vis-wa-admin-enabled" style="opacity:0;width:0;height:0;position:absolute" onchange="visWaToggle('adminEnabled',this.checked)">
+                    <span id="vis-wa-admin-track" style="position:absolute;inset:0;border-radius:20px;background:var(--vis-bdr2);transition:background .2s"></span>
+                    <span id="vis-wa-admin-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)"></span>
+                  </label>
+                </div>
+                <!-- Admin phone -->
+                <div class="vis-field" style="margin-bottom:8px">
+                  <label class="vis-lbl">Admin WhatsApp Number</label>
+                  <input id="vis-wa-admin-phone" class="vis-inp mono" type="tel" placeholder="e.g. 919876543210">
+                </div>
+                <!-- Templates -->
+                <div id="vis-wa-tmpl-wrap" style="display:none">
+                  <div class="vis-field" style="margin-bottom:6px">
+                    <label class="vis-lbl">Check-in Message Template</label>
+                    <textarea id="vis-wa-tmpl-in" class="vis-inp" rows="4" style="resize:vertical;font-size:11px;font-family:'JetBrains Mono',monospace"></textarea>
+                    <div style="font-size:10px;color:var(--vis-muted);margin-top:3px">Variables: {name} {phone} {purpose} {time} {date}</div>
+                  </div>
+                  <div class="vis-field" style="margin-bottom:8px">
+                    <label class="vis-lbl">Check-out Message Template</label>
+                    <textarea id="vis-wa-tmpl-out" class="vis-inp" rows="4" style="resize:vertical;font-size:11px;font-family:'JetBrains Mono',monospace"></textarea>
+                    <div style="font-size:10px;color:var(--vis-muted);margin-top:3px">Variables: {name} {checkin} {checkout} {date}</div>
+                  </div>
+                </div>
               </div>
-              <!-- Admin phone -->
-              <div class="vis-field" style="margin-bottom:8px">
-                <label class="vis-lbl">Admin WhatsApp Number</label>
-                <input id="vis-wa-admin-phone" class="vis-inp mono" type="tel" placeholder="e.g. 919876543210">
-              </div>
-              <!-- Templates -->
-              <div id="vis-wa-tmpl-wrap" style="display:none">
-                <div class="vis-field" style="margin-bottom:6px">
-                  <label class="vis-lbl">Check-in Message Template</label>
-                  <textarea id="vis-wa-tmpl-in" class="vis-inp" rows="4" style="resize:vertical;font-size:11px;font-family:'JetBrains Mono',monospace"></textarea>
-                  <div style="font-size:10px;color:var(--vis-muted);margin-top:3px">Variables: {name} {phone} {purpose} {time} {date}</div>
+
+              <!-- Meta Cloud API section -->
+              <div id="vis-wa-meta-section" style="display:none">
+                <div class="vis-field" style="margin-bottom:8px">
+                  <label class="vis-lbl">Phone Number ID</label>
+                  <input id="vis-meta-wa-phone-id" class="vis-inp mono" placeholder="e.g. 1087560414445341">
+                  <div style="font-size:10px;color:var(--vis-muted);margin-top:3px">Meta Developer Console → WhatsApp → API Setup</div>
                 </div>
                 <div class="vis-field" style="margin-bottom:8px">
-                  <label class="vis-lbl">Check-out Message Template</label>
-                  <textarea id="vis-wa-tmpl-out" class="vis-inp" rows="4" style="resize:vertical;font-size:11px;font-family:'JetBrains Mono',monospace"></textarea>
-                  <div style="font-size:10px;color:var(--vis-muted);margin-top:3px">Variables: {name} {checkin} {checkout} {date}</div>
+                  <label class="vis-lbl">Access Token</label>
+                  <input id="vis-meta-wa-token" class="vis-inp mono" type="password" placeholder="EAAxxxxx...">
                 </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                  <div class="vis-field">
+                    <label class="vis-lbl">Check-in Template</label>
+                    <input id="vis-meta-wa-tmpl-in" class="vis-inp mono" placeholder="e.g. visitor_checkin">
+                  </div>
+                  <div class="vis-field">
+                    <label class="vis-lbl">Check-out Template</label>
+                    <input id="vis-meta-wa-tmpl-out" class="vis-inp mono" placeholder="e.g. visitor_checkout">
+                  </div>
+                </div>
+                <div class="vis-field" style="margin-bottom:8px">
+                  <label class="vis-lbl">Language Code</label>
+                  <input id="vis-meta-wa-lang" class="vis-inp mono" placeholder="en_US" value="en_US" style="max-width:110px">
+                </div>
+                <div style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.22);border-radius:9px;padding:9px 11px;margin-bottom:9px;font-size:10.5px;color:#1d4ed8;font-family:'Plus Jakarta Sans',sans-serif">
+                  <b>Check-in params:</b> {{1}} name &nbsp;|&nbsp; {{2}} purpose &nbsp;|&nbsp; {{3}} time &nbsp;|&nbsp; {{4}} date<br>
+                  <b>Check-out params:</b> {{1}} name &nbsp;|&nbsp; {{2}} check-in &nbsp;|&nbsp; {{3}} check-out &nbsp;|&nbsp; {{4}} date
+                </div>
+                <div class="vis-field" style="margin-bottom:8px">
+                  <label class="vis-lbl">Admin Number <span style="font-weight:400">(optional)</span></label>
+                  <input id="vis-meta-wa-admin-phone" class="vis-inp mono" placeholder="e.g. 919876543210">
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:var(--vis-txt);font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:10px">
+                  <input type="checkbox" id="vis-meta-wa-admin-enabled" style="accent-color:#25D366;width:15px;height:15px"> Send admin alert via Meta API
+                </label>
+                <div id="vis-meta-wa-status" style="font-size:11px;min-height:14px;margin-bottom:8px;color:var(--vis-sub);font-family:'Plus Jakarta Sans',sans-serif"></div>
               </div>
+
+              <!-- Save + Test + Templates toggle -->
               <button type="button" onclick="visWaSaveSettings()"
-                style="width:100%;padding:9px;background:#d97706;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+                style="width:100%;padding:9px;background:#d97706;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:6px">
                 💾 Save WA Settings
               </button>
-              <button type="button" onclick="document.getElementById('vis-wa-tmpl-wrap').style.display=document.getElementById('vis-wa-tmpl-wrap').style.display==='none'?'block':'none'"
-                style="width:100%;margin-top:6px;padding:7px;background:var(--vis-bg3);color:var(--vis-sub);border:1px solid var(--vis-bdr);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
-                ✏️ Edit Message Templates
-              </button>
+              <div style="display:flex;gap:6px">
+                <button type="button" onclick="visTestWA()"
+                  style="flex:1;padding:7px;background:var(--vis-bg3);color:var(--vis-sub);border:1px solid var(--vis-bdr);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+                  🧪 Test
+                </button>
+                <button type="button" id="vis-wa-tmpl-toggle-btn" onclick="document.getElementById('vis-wa-tmpl-wrap').style.display=document.getElementById('vis-wa-tmpl-wrap').style.display==='none'?'block':'none'"
+                  style="flex:1;padding:7px;background:var(--vis-bg3);color:var(--vis-sub);border:1px solid var(--vis-bdr);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+                  ✏️ Edit Templates
+                </button>
+              </div>
             </div>
 
             <!-- Telegram -->
@@ -3565,8 +3679,6 @@ function gRenderPasses(){
   }
   // Auto-load missing photos in background
   gAutoLoadPhotos();
-  // Bus Tally mein GP counts auto-update karo
-  if(typeof btRefreshGPCounts === 'function') btRefreshGPCounts();
 }
 
 function gAutoLoadPhotos(){
@@ -3743,9 +3855,9 @@ function gTgCard(id){
 
 // ── GatePass WhatsApp Exit Notification ──
 const G_WA_EXIT_KEY = 'gp_wa_exit';
-let _gWAExitCfg = {parentEnabled:false, adminEnabled:false, adminPhone:'', tmplParent:''};
+let _gWAExitCfg = {parentEnabled:false,adminEnabled:false,adminPhone:'',tmplParent:'',sendMode:'web',metaPhoneId:'',metaToken:'',metaTemplate:'',metaLang:'en_US',metaAdminEnabled:false,metaAdminPhone:''};
 function gLoadWAExit(){
-  try{ const d=localStorage.getItem(G_WA_EXIT_KEY); if(d) _gWAExitCfg=JSON.parse(d); }catch(e){}
+  try{ const d=localStorage.getItem(G_WA_EXIT_KEY); if(d) _gWAExitCfg=Object.assign({sendMode:'web',metaPhoneId:'',metaToken:'',metaTemplate:'',metaLang:'en_US',metaAdminEnabled:false,metaAdminPhone:''},JSON.parse(d)); }catch(e){}
   const pe=document.getElementById('g-wa-exit-parent');
   const ae=document.getElementById('g-wa-exit-admin');
   const ap=document.getElementById('g-wa-exit-admin-phone');
@@ -3754,20 +3866,61 @@ function gLoadWAExit(){
   if(ae) ae.checked=!!_gWAExitCfg.adminEnabled;
   if(ap) ap.value=_gWAExitCfg.adminPhone||'';
   if(tp&&tp.value===''&&_gWAExitCfg.tmplParent) tp.value=_gWAExitCfg.tmplParent;
+  // Meta fields
+  const pid=document.getElementById('g-exit-meta-phone-id'); if(pid) pid.value=_gWAExitCfg.metaPhoneId||'';
+  const tok=document.getElementById('g-exit-meta-token'); if(tok) tok.value=_gWAExitCfg.metaToken||'';
+  const tpl=document.getElementById('g-exit-meta-template'); if(tpl) tpl.value=_gWAExitCfg.metaTemplate||'';
+  const lng=document.getElementById('g-exit-meta-lang'); if(lng) lng.value=_gWAExitCfg.metaLang||'en_US';
+  const mae=document.getElementById('g-exit-meta-admin-enabled'); if(mae) mae.checked=!!_gWAExitCfg.metaAdminEnabled;
+  const map=document.getElementById('g-exit-meta-admin-phone'); if(map) map.value=_gWAExitCfg.metaAdminPhone||'';
+  gExitSwitchMode(_gWAExitCfg.sendMode||'web');
 }
 function gSaveWAExit(){
   const pe=document.getElementById('g-wa-exit-parent');
   const ae=document.getElementById('g-wa-exit-admin');
   const ap=document.getElementById('g-wa-exit-admin-phone');
   const tp=document.getElementById('g-wa-exit-tmpl-parent');
+  const modeEl=document.querySelector('input[name="g-exit-wa-mode"]:checked');
+  const pid=document.getElementById('g-exit-meta-phone-id');
+  const tok=document.getElementById('g-exit-meta-token');
+  const tpl=document.getElementById('g-exit-meta-template');
+  const lng=document.getElementById('g-exit-meta-lang');
+  const mae=document.getElementById('g-exit-meta-admin-enabled');
+  const map=document.getElementById('g-exit-meta-admin-phone');
   _gWAExitCfg={
     parentEnabled:pe?pe.checked:false,
     adminEnabled:ae?ae.checked:false,
     adminPhone:(ap?ap.value.trim().replace(/[^0-9]/g,''):''),
-    tmplParent:tp?tp.value:''
+    tmplParent:tp?tp.value:'',
+    sendMode:modeEl?modeEl.value:'web',
+    metaPhoneId:pid?pid.value.trim():'',
+    metaToken:tok?tok.value.trim():'',
+    metaTemplate:tpl?tpl.value.trim():'',
+    metaLang:lng?lng.value.trim()||'en_US':'en_US',
+    metaAdminEnabled:mae?mae.checked:false,
+    metaAdminPhone:map?map.value.trim().replace(/[^0-9]/g,''):''
   };
   try{ localStorage.setItem(G_WA_EXIT_KEY,JSON.stringify(_gWAExitCfg)); }catch(e){}
   gToast('✅ WhatsApp exit settings saved');
+}
+function gExitSwitchMode(mode){
+  const wc=document.getElementById('g-exit-wa-card-web');
+  const mc=document.getElementById('g-exit-wa-card-meta');
+  const ws=document.getElementById('g-exit-wa-web-section');
+  const ms=document.getElementById('g-exit-wa-meta-section');
+  const wr=document.getElementById('g-exit-wa-mode-web');
+  const mr=document.getElementById('g-exit-wa-mode-meta');
+  if(mode==='meta'){
+    if(mr)mr.checked=true; if(wr)wr.checked=false;
+    if(wc){wc.style.border='2px solid var(--border)';wc.style.background='var(--bg2)';}
+    if(mc){mc.style.border='2px solid #25D366';mc.style.background='rgba(37,211,102,.08)';}
+    if(ws)ws.style.display='none'; if(ms)ms.style.display='block';
+  } else {
+    if(wr)wr.checked=true; if(mr)mr.checked=false;
+    if(wc){wc.style.border='2px solid #25D366';wc.style.background='rgba(37,211,102,.08)';}
+    if(mc){mc.style.border='2px solid var(--border)';mc.style.background='var(--bg2)';}
+    if(ws)ws.style.display='block'; if(ms)ms.style.display='none';
+  }
 }
 function gBuildExitMsg(p, tmpl){
   const def='Dear Parent,\n\n*{name}* (Class {class}) has exited the school gate.\n🕐 Gate Out: {gateout}\n📅 Date: {date}\n🚌 Bus: {bus}\n\nRegards,\n*School Reception*';
@@ -3775,8 +3928,42 @@ function gBuildExitMsg(p, tmpl){
   const d=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   return t.replace(/{name}/g,p.studentName||'').replace(/{class}/g,p.class||'').replace(/{gateout}/g,p.gateOutTime||'').replace(/{date}/g,p.date||d).replace(/{bus}/g,p.busNumber||'—').replace(/{pickedby}/g,p.pickedUpBy||'');
 }
+async function gMetaExitSend(toPhone, pass){
+  const phone=String(toPhone).replace(/[^0-9]/g,'');
+  if(phone.length<10) throw new Error('Invalid phone: '+toPhone);
+  const cfg=_gWAExitCfg;
+  const d=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  let body;
+  if(cfg.metaTemplate){
+    body={messaging_product:'whatsapp',to:phone,type:'template',template:{name:cfg.metaTemplate,language:{code:cfg.metaLang||'en_US'},components:[{type:'body',parameters:[
+      {type:'text',parameter_name:'name',text:pass.studentName||'Student'},
+      {type:'text',parameter_name:'class',text:pass.class||'N/A'},
+      {type:'text',parameter_name:'gateout',text:pass.gateOutTime||''},
+      {type:'text',parameter_name:'date',text:pass.date||d}
+    ]}]}};
+  } else {
+    body={messaging_product:'whatsapp',to:phone,type:'text',text:{body:gBuildExitMsg(pass,cfg.tmplParent)}};
+  }
+  const resp=await fetch('https://graph.facebook.com/v25.0/'+cfg.metaPhoneId+'/messages',{
+    method:'POST',headers:{'Authorization':'Bearer '+cfg.metaToken,'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  const data=await resp.json();
+  if(!resp.ok) throw new Error((data.error&&data.error.message)||JSON.stringify(data));
+  return data;
+}
 function gSendExitWA(pass){
-  // Find student phone
+  if(_gWAExitCfg.sendMode==='meta'&&_gWAExitCfg.metaPhoneId&&_gWAExitCfg.metaToken){
+    const stu=GS.students.find(s=>s.admissionNumber===pass.admissionNumber);
+    const pPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
+    if(_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10){
+      gMetaExitSend(pPhone,pass).then(()=>gToast('📨 Meta WA sent to parent')).catch(e=>gToast('⚠️ Meta WA: '+e.message,'err'));
+    }
+    if(_gWAExitCfg.metaAdminEnabled&&_gWAExitCfg.metaAdminPhone){
+      gMetaExitSend(_gWAExitCfg.metaAdminPhone,pass).then(()=>gToast('📨 Meta WA sent to admin')).catch(e=>gToast('⚠️ Meta Admin WA: '+e.message,'err'));
+    }
+    return;
+  }
+  // WhatsApp Web fallback
   const stu=GS.students.find(s=>s.admissionNumber===pass.admissionNumber);
   const pPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
   if(_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10){
@@ -3787,6 +3974,32 @@ function gSendExitWA(pass){
     const delay=_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10?2000:0;
     setTimeout(()=>{ window.location.href='whatsapp://send?phone='+_gWAExitCfg.adminPhone+'&text='+encodeURIComponent(aMsg); }, delay);
   }
+}
+async function gTestExitWA(){
+  gLoadWAExit();
+  if(_gWAExitCfg.sendMode==='meta'){
+    const pid=document.getElementById('g-exit-meta-phone-id');
+    const tok=document.getElementById('g-exit-meta-token');
+    const st=document.getElementById('g-exit-meta-status');
+    if(!pid?.value.trim()||!tok?.value.trim()){if(st){st.textContent='⚠️ Phone ID & Token required';st.style.color='#f59e0b';}gToast('⚠️ Fill Phone ID & Token first','err');return;}
+    const testPhone=prompt('Test phone (91XXXXXXXXXX):','');
+    if(!testPhone)return;
+    if(st){st.textContent='⏳ Sending test…';st.style.color='#3b82f6';}
+    const testPass={studentName:'Test Student',class:'X-A',gateOutTime:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),busNumber:'Bus 5',pickedUpBy:'Parent'};
+    try{
+      await gMetaExitSend(testPhone,testPass);
+      if(st){st.textContent='✅ Test sent to +'+testPhone.replace(/[^0-9]/g,'').slice(-10);st.style.color='#16a34a';}
+      gToast('✅ Gate-Out Meta WA test sent!');
+    }catch(err){
+      if(st){st.textContent='❌ '+err.message;st.style.color='#dc2626';}
+      gToast('❌ '+err.message,'err');
+    }
+    return;
+  }
+  // WA Web test
+  const testPass={studentName:'Test Student',class:'X-A',gateOutTime:'03:30 PM',date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),busNumber:'Bus 5',pickedUpBy:'Parent'};
+  const tp=document.getElementById('g-wa-exit-tmpl-parent');
+  window.open('whatsapp://send?text='+encodeURIComponent(gBuildExitMsg(testPass,tp?tp.value:'')),'_blank');
 }
 
 async function gPunchOut(id){
@@ -4303,9 +4516,19 @@ function visLoadWaUI(){
   if(ap) ap.value=_visWACfg.adminPhone||'';
   if(ti) ti.value=_visWACfg.tmplIn||'';
   if(to) to.value=_visWACfg.tmplOut||'';
+  // Meta fields
+  const pid=document.getElementById('vis-meta-wa-phone-id'); if(pid) pid.value=_visWACfg.metaPhoneId||'';
+  const tok=document.getElementById('vis-meta-wa-token'); if(tok) tok.value=_visWACfg.metaToken||'';
+  const tmi=document.getElementById('vis-meta-wa-tmpl-in'); if(tmi) tmi.value=_visWACfg.metaTmplIn||'';
+  const tmo=document.getElementById('vis-meta-wa-tmpl-out'); if(tmo) tmo.value=_visWACfg.metaTmplOut||'';
+  const lng=document.getElementById('vis-meta-wa-lang'); if(lng) lng.value=_visWACfg.metaLang||'en_US';
+  const mae=document.getElementById('vis-meta-wa-admin-enabled'); if(mae) mae.checked=!!_visWACfg.metaAdminEnabled;
+  const map=document.getElementById('vis-meta-wa-admin-phone'); if(map) map.value=_visWACfg.metaAdminPhone||'';
+  visSwitchSendMode(_visWACfg.sendMode||'web');
   const stat=document.getElementById('vis-wa-status');
   if(stat){
-    if(_visWACfg.enabled||_visWACfg.adminEnabled) stat.textContent='🟢 Active — WA notifications on';
+    if(_visWACfg.sendMode==='meta'&&_visWACfg.metaPhoneId) stat.textContent='🟢 Active — Meta Cloud API';
+    else if(_visWACfg.enabled||_visWACfg.adminEnabled) stat.textContent='🟢 Active — WA notifications on';
     else stat.textContent='⚪ Not configured';
   }
 }
@@ -4321,9 +4544,25 @@ function visWaSaveSettings(){
   const ap=document.getElementById('vis-wa-admin-phone');
   const ti=document.getElementById('vis-wa-tmpl-in');
   const to=document.getElementById('vis-wa-tmpl-out');
+  const modeEl=document.querySelector('input[name="vis-wa-send-mode"]:checked');
+  const pid=document.getElementById('vis-meta-wa-phone-id');
+  const tok=document.getElementById('vis-meta-wa-token');
+  const tmi=document.getElementById('vis-meta-wa-tmpl-in');
+  const tmo=document.getElementById('vis-meta-wa-tmpl-out');
+  const lng=document.getElementById('vis-meta-wa-lang');
+  const mae=document.getElementById('vis-meta-wa-admin-enabled');
+  const map=document.getElementById('vis-meta-wa-admin-phone');
   _visWACfg.adminPhone=(ap?ap.value.trim().replace(/[^0-9]/g,''):'');
   _visWACfg.tmplIn=ti?ti.value:'';
   _visWACfg.tmplOut=to?to.value:'';
+  _visWACfg.sendMode=modeEl?modeEl.value:'web';
+  _visWACfg.metaPhoneId=pid?pid.value.trim():'';
+  _visWACfg.metaToken=tok?tok.value.trim():'';
+  _visWACfg.metaTmplIn=tmi?tmi.value.trim():'';
+  _visWACfg.metaTmplOut=tmo?tmo.value.trim():'';
+  _visWACfg.metaLang=lng?lng.value.trim()||'en_US':'en_US';
+  _visWACfg.metaAdminEnabled=mae?mae.checked:false;
+  _visWACfg.metaAdminPhone=map?map.value.trim().replace(/[^0-9]/g,''):'';
   visWaSave();
   visLoadWaUI();
   gToast('✅ WhatsApp settings saved');
@@ -4862,8 +5101,8 @@ function visParseTs(tsVal){
 }
 // ── Visitor WhatsApp ──
 const VIS_WA_KEY = 'lis_vis_wa';
-let _visWACfg = {enabled:false,adminEnabled:false,adminPhone:'',tmplIn:'',tmplOut:''};
-function visWaLoad(){ try{ const d=localStorage.getItem(VIS_WA_KEY); if(d) _visWACfg=JSON.parse(d); }catch(e){} }
+let _visWACfg = {enabled:false,adminEnabled:false,adminPhone:'',tmplIn:'',tmplOut:'',sendMode:'web',metaPhoneId:'',metaToken:'',metaTmplIn:'',metaTmplOut:'',metaLang:'en_US',metaAdminEnabled:false,metaAdminPhone:''};
+function visWaLoad(){ try{ const d=localStorage.getItem(VIS_WA_KEY); if(d) _visWACfg=Object.assign({sendMode:'web',metaPhoneId:'',metaToken:'',metaTmplIn:'',metaTmplOut:'',metaLang:'en_US',metaAdminEnabled:false,metaAdminPhone:''},JSON.parse(d)); }catch(e){} }
 function visWaSave(){ try{ localStorage.setItem(VIS_WA_KEY,JSON.stringify(_visWACfg)); }catch(e){} }
 function visBuildWAMsg(en,tmpl,type){
   const defIn='Dear *{name}*,\n\nYou have checked in at *Lotus International School*.\n\n📋 Purpose: *{purpose}*\n🕐 Time: {time}\n📅 Date: {date}\n\nHave a good visit!';
@@ -4876,8 +5115,56 @@ function visOpenWA(phone,msg){
   if(!p||p.length<10){ gToast('Invalid phone number','err'); return; }
   window.location.href='whatsapp://send?phone='+p+'&text='+encodeURIComponent(msg);
 }
+function visSwitchSendMode(mode){
+  const wc=document.getElementById('vis-wa-card-web');
+  const mc=document.getElementById('vis-wa-card-meta');
+  const ws=document.getElementById('vis-wa-web-section');
+  const ms=document.getElementById('vis-wa-meta-section');
+  const tmplBtn=document.getElementById('vis-wa-tmpl-toggle-btn');
+  const wr=document.getElementById('vis-wa-mode-web');
+  const mr=document.getElementById('vis-wa-mode-meta');
+  if(mode==='meta'){
+    if(mr)mr.checked=true; if(wr)wr.checked=false;
+    if(wc){wc.style.border='2px solid var(--vis-bdr)';wc.style.background='var(--vis-bg3)';}
+    if(mc){mc.style.border='2px solid #25D366';mc.style.background='rgba(37,211,102,.07)';}
+    if(ws)ws.style.display='none'; if(ms)ms.style.display='block';
+    if(tmplBtn)tmplBtn.style.display='none';
+  } else {
+    if(wr)wr.checked=true; if(mr)mr.checked=false;
+    if(wc){wc.style.border='2px solid #25D366';wc.style.background='rgba(37,211,102,.07)';}
+    if(mc){mc.style.border='2px solid var(--vis-bdr)';mc.style.background='var(--vis-bg3)';}
+    if(ws)ws.style.display='block'; if(ms)ms.style.display='none';
+    if(tmplBtn)tmplBtn.style.display='';
+  }
+}
+async function visMetaSend(toPhone, entry, type){
+  const phone=String(toPhone).replace(/[^0-9]/g,'');
+  if(phone.length<10) throw new Error('Invalid phone: '+toPhone);
+  const cfg=_visWACfg;
+  const tmplName=type==='in'?cfg.metaTmplIn:cfg.metaTmplOut;
+  let body;
+  if(tmplName){
+    const params=type==='in'
+      ?[{type:'text',parameter_name:'name',text:entry.name||'Visitor'},{type:'text',parameter_name:'purpose',text:entry.purpose||'Visit'},{type:'text',parameter_name:'checkin',text:entry.checkIn||''},{type:'text',parameter_name:'date',text:entry.checkInDate||''}]
+      :[{type:'text',parameter_name:'name',text:entry.name||'Visitor'},{type:'text',parameter_name:'checkin',text:entry.checkIn||''},{type:'text',parameter_name:'checkout',text:entry.checkOut||''},{type:'text',parameter_name:'date',text:entry.checkInDate||''}];
+    body={messaging_product:'whatsapp',to:phone,type:'template',template:{name:tmplName,language:{code:cfg.metaLang||'en_US'},components:[{type:'body',parameters:params}]}};
+  } else {
+    body={messaging_product:'whatsapp',to:phone,type:'text',text:{body:visBuildWAMsg(entry,type==='in'?cfg.tmplIn:cfg.tmplOut,type)}};
+  }
+  const resp=await fetch('https://graph.facebook.com/v25.0/'+cfg.metaPhoneId+'/messages',{
+    method:'POST',headers:{'Authorization':'Bearer '+cfg.metaToken,'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  const data=await resp.json();
+  if(!resp.ok) throw new Error((data.error&&data.error.message)||JSON.stringify(data));
+  return data;
+}
 function visSendWACheckin(entry){
   visWaLoad();
+  if(_visWACfg.sendMode==='meta'&&_visWACfg.metaPhoneId&&_visWACfg.metaToken){
+    if(_visWACfg.enabled&&entry.phone) visMetaSend(entry.phone,entry,'in').then(()=>gToast('📨 Meta WA: Check-in sent')).catch(e=>gToast('⚠️ Meta WA: '+e.message,'err'));
+    if(_visWACfg.metaAdminEnabled&&_visWACfg.metaAdminPhone) visMetaSend(_visWACfg.metaAdminPhone,entry,'in').catch(()=>{});
+    return;
+  }
   if(_visWACfg.enabled&&entry.phone) visOpenWA(entry.phone,visBuildWAMsg(entry,_visWACfg.tmplIn,'in'));
   if(_visWACfg.adminEnabled&&_visWACfg.adminPhone){
     const aMsg='🔔 *Visitor Checked In*\n\n👤 '+entry.name+'\n📱 '+entry.phone+'\n📋 '+entry.purpose+'\n🕐 '+entry.checkIn+' · '+entry.checkInDate;
@@ -4886,11 +5173,36 @@ function visSendWACheckin(entry){
 }
 function visSendWACheckout(entry){
   visWaLoad();
+  if(_visWACfg.sendMode==='meta'&&_visWACfg.metaPhoneId&&_visWACfg.metaToken){
+    if(_visWACfg.enabled&&entry.phone) visMetaSend(entry.phone,entry,'out').then(()=>gToast('📨 Meta WA: Check-out sent')).catch(e=>gToast('⚠️ Meta WA: '+e.message,'err'));
+    if(_visWACfg.metaAdminEnabled&&_visWACfg.metaAdminPhone) visMetaSend(_visWACfg.metaAdminPhone,entry,'out').catch(()=>{});
+    return;
+  }
   if(_visWACfg.enabled&&entry.phone) visOpenWA(entry.phone,visBuildWAMsg(entry,_visWACfg.tmplOut,'out'));
   if(_visWACfg.adminEnabled&&_visWACfg.adminPhone){
     const aMsg='🔔 *Visitor Checked Out*\n\n👤 '+entry.name+'\n📱 '+entry.phone+'\n📋 '+entry.purpose+'\n🕐 In: '+entry.checkIn+' · Out: '+entry.checkOut+'\n📅 '+entry.checkInDate+(entry.checkOutDate&&entry.checkOutDate!==entry.checkInDate?' → '+entry.checkOutDate:'');
     setTimeout(()=>visOpenWA(_visWACfg.adminPhone,aMsg),_visWACfg.enabled&&entry.phone?2500:0);
   }
+}
+async function visTestWA(){
+  visWaLoad();
+  const testEntry={name:'Test Visitor',phone:'',purpose:'Meeting',checkIn:'10:00 AM',checkOut:'11:00 AM',checkInDate:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})};
+  if(_visWACfg.sendMode==='meta'&&_visWACfg.metaPhoneId&&_visWACfg.metaToken){
+    const st=document.getElementById('vis-meta-wa-status');
+    const testPhone=prompt('Test phone (91XXXXXXXXXX):','');
+    if(!testPhone)return;
+    if(st){st.textContent='⏳ Sending test…';st.style.color='#3b82f6';}
+    try{
+      await visMetaSend(testPhone,testEntry,'in');
+      if(st){st.textContent='✅ Test check-in sent to +'+testPhone.replace(/[^0-9]/g,'').slice(-10);st.style.color='#16a34a';}
+      gToast('✅ Visitor Meta WA test sent!');
+    }catch(err){
+      if(st){st.textContent='❌ '+err.message;st.style.color='#dc2626';}
+      gToast('❌ '+err.message,'err');
+    }
+    return;
+  }
+  window.open('whatsapp://send?text='+encodeURIComponent(visBuildWAMsg(testEntry,_visWACfg.tmplIn,'in')),'_blank');
 }
 function visCheckIn(){
   const name=document.getElementById('vis-name').value.trim();
@@ -7347,7 +7659,7 @@ function _btFbSt(msg, color){
 async function btFbSaveCfg(){
   const url  = (document.getElementById('g-bt-fb-url') ?.value||'').trim().replace(/\/$/,'');
   const code = (document.getElementById('g-bt-fb-code')?.value||'').trim().replace(/[^a-zA-Z0-9_-]/g,'');
-  if(!url||!code){ _btFbSt('❌ URL aur Code dono chahiye','var(--red)'); return; }
+  if(!url||!code){ _btFbSt('❌ URL and Code are required','var(--red)'); return; }
   try{
     const r = await fetch(`${url}/${code}/bt_ping.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Date.now())});
     if(!r.ok) throw 0;
@@ -7364,7 +7676,7 @@ async function btFbSaveCfg(){
 async function btFbTestCfg(){
   const url  = (document.getElementById('g-bt-fb-url') ?.value||'').trim().replace(/\/$/,'');
   const code = (document.getElementById('g-bt-fb-code')?.value||'').trim();
-  if(!url||!code){ _btFbSt('❌ Pehle URL aur Code daalen','var(--red)'); return; }
+  if(!url||!code){ _btFbSt('❌ Please enter URL and Code first','var(--red)'); return; }
   try{
     const r = await fetch(`${url}/${code}/bt_ping.json`);
     if(r.ok){ _btFbSt('🔌 Connection OK','var(--green)'); gToast('Bus Tally Firebase OK'); }
@@ -7425,7 +7737,7 @@ async function btFbPull(force){
 function btFbStartSync(){
   if(_btFbSyncIv) clearInterval(_btFbSyncIv);
   btFbPull();
-  _btFbSyncIv = setInterval(()=>btFbPull(), 5000);
+  _btFbSyncIv = setInterval(()=>btFbPull(), 10000);
 }
 
 // Restart sync when page becomes visible again (e.g. switching back from another app/tab)
@@ -7489,10 +7801,6 @@ function btSyncAndRender(){
   BT_DATA.buses = BT_DATA.buses.filter(b=>b.name&&validBuses.includes(b.name));
   if(BT_DATA.buses.length !== before) changed = true;
   if(changed){ btSave(); btRenderMorning(); btRenderEvening(); btRenderSummary(); btCheckMatch(); }
-  else {
-    // Bus list same hai, lekin GP counts refresh karo (new gatepasses aa sakte hain)
-    btRefreshGPCounts();
-  }
 }
 
 // ── Render both columns ──
@@ -7502,8 +7810,6 @@ function btRender(){
   btRenderSummary();
   btCheckMatch();
   homeUpdateBusTally();
-  // GP counts ensure latest hain
-  if(typeof btRefreshGPCounts === 'function') btRefreshGPCounts();
   // Update gp tab badge & content if tab is active
   if(_btActiveTab==='gp') btRenderGatepasses();
   else {
@@ -7520,48 +7826,9 @@ const btE = s=>String(s||'').replace(/&/g,'&amp;');
 function btGatepassCountForBus(busName){
   // Count today's gatepasses for this bus from GatePass app data
   if(typeof GS === 'undefined' || !GS.passes) return null;
-  if(!busName) return null; // empty busName pe count nahi
   const today = btTodayStr();
-  const passes = GS.passes.filter(p => p.date === today && p.busNumber && p.busNumber === busName);
+  const passes = GS.passes.filter(p => p.date === today && (p.busNumber||'') === busName);
   return passes.length;
-}
-
-// ── GP count auto-refresh: jab bhi GS.passes update ho, bus tally re-render karo ──
-function btRefreshGPCounts(){
-  // Sirf GP count wale cells update karo — pura re-render nahi (flicker avoid)
-  if(!BT_DATA.buses || !BT_DATA.buses.length) return;
-  BT_DATA.buses.forEach((bus, idx)=>{
-    // Evening GP cell
-    const gpCell = document.getElementById('btec-gp-'+idx);
-    if(gpCell){
-      const gpCount = btGatepassCountForBus(bus.name);
-      gpCell.innerHTML = gpCount !== null ? gpCount : `<span class='bt-mini-disp muted'>—</span>`;
-    }
-    // Evening remaining cell
-    const remCell  = document.getElementById('btec-rem-'+idx);
-    const remCard  = document.getElementById('btec-rem-card-'+idx);
-    if(remCell){
-      const { expected, count, gpVal, remaining } = btCalcEveRow(bus);
-      const remClass = remaining===null ? 'c-remain-neu' : remaining===0 ? 'c-remain-ok' : 'c-remain-bad';
-      const remText  = remaining===null
-        ? `<span class='bt-mini-disp muted'>—</span>`
-        : remaining===0 ? '✅ 0'
-        : remaining > 0 ? `⚠️ ${remaining}`
-        : `<span style="color:#dc2626;font-weight:900;font-size:15px">+${Math.abs(remaining)}</span>`;
-      remCell.innerHTML = remText;
-      if(remCard){ remCard.className='bt-mini-card '+remClass; }
-    }
-  });
-  // Summary + match bhi update karo
-  btRenderSummary();
-  btCheckMatch();
-  homeUpdateBusTally();
-  // GP tab badge update
-  const today = btTodayStr();
-  const passes = (typeof GS !== 'undefined' && GS.passes) ? GS.passes.filter(p=>p.date===today) : [];
-  const cntEl = document.getElementById('bt-tab-gp-cnt');
-  if(cntEl) cntEl.textContent = passes.length>0?`(${passes.length})`:'';
-  if(_btActiveTab==='gp') btRenderGatepasses();
 }
 
 function btRenderMorning(){
@@ -8102,32 +8369,9 @@ const BT_TG_KEY = 'gp_tg_cfg';
 function btGetTgCfg(){ try{ const d=localStorage.getItem(BT_TG_KEY); return d?JSON.parse(d):{token:'',chatId:''}; }catch(e){ return {token:'',chatId:''}; } }
 
 // ── Manual Save + Telegram notify ──
-// ── Last-sent snapshot for duplicate prevention ──
-let _btLastSentHash = '';
-function btDataHash(){
-  // Sirf relevant fields ka lightweight hash — buses counts + tab
-  try{
-    const tab = _btActiveTab;
-    const snap = BT_DATA.buses.map(b=>({
-      n:b.name,
-      m:b.morning||0, pm:b.parentMorning||0,
-      e:b.evening||0,
-      st:JSON.stringify(b.shiftTo||[]),
-      sf:JSON.stringify(b.shiftFrom||[])
-    }));
-    return tab + '|' + JSON.stringify(snap) + '|' + JSON.stringify(BT_DATA.parent||{});
-  }catch(e){ return ''; }
-}
-
 function btManualSave(){
   btSave();
   btToast(_t('js_data_saved'),'ok');
-  const hash = btDataHash();
-  if(hash && hash === _btLastSentHash){
-    btToast('ℹ️ No change — message not sent','ok');
-    return;
-  }
-  _btLastSentHash = hash;
   btSendTelegram();
 }
 
@@ -8171,18 +8415,8 @@ async function btSendTelegram(){
       const shiftIn   = shiftFrE.reduce((s,e)=>s+(e.count||0),0);
       // Bus-wise gatepass count
       const gpC = btGatepassCountForBus(bus.name);
-      const gpVal = gpC || 0;
-      const mornBase = (bus.morning||0) + (bus.parentMorning||0);
-      const expected = mornBase - shiftOut + shiftIn;
-      const busTotal = c + gpVal;
-      const busDiff = expected > 0 ? expected - busTotal : null;
       let row = `🚌 *${bus.name}:* On Bus: ${c}`;
-      if(gpVal > 0) row += ` (GP=${gpVal}) | Total: ${busTotal}`;
-      if(busDiff !== null && expected > 0){
-        if(busDiff === 0)      row += ` ✅`;
-        else if(busDiff > 0)   row += ` ⚠️ _${busDiff} short_`;
-        else                   row += ` 🔴 _${Math.abs(busDiff)} extra_`;
-      }
+      if(gpC > 0) row += ` (GP=${gpC}) | Total: ${c + gpC}`;
       if(c===0 && !shiftIn && !shiftOut) row += ` _(absent)_`;
       lines.push(row);
       // Shift detail lines — who went where, how many
