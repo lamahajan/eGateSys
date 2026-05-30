@@ -2231,6 +2231,7 @@ Regards,
                 <div style="display:flex;gap:8px">
                   <button type="button" onclick="gSaveWAExit()"
                     style="flex:1;padding:10px;background:#25D366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">💾 Save</button>
+                  <button type="button" onclick="gDebugWA()" style="background:var(--bg3);border:1.5px solid var(--bdr2);color:var(--sub);padding:8px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans);margin-right:6px">🔍 Debug</button>
                   <button type="button" onclick="gTestExitWA()"
                     style="padding:10px 14px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)">🧪 Test</button>
                 </div>
@@ -3955,29 +3956,122 @@ async function gMetaExitSend(toPhone, pass){
   if(!resp.ok) throw new Error((data.error&&data.error.message)||JSON.stringify(data));
   return data;
 }
+function gDebugWA(){
+  gLoadWAExit();
+  const cfg=_gWAExitCfg;
+  const lines=[];
+  lines.push('=== WhatsApp Gate-Out Debug ===');
+  lines.push('Mode: '+(cfg.sendMode||'web'));
+  lines.push('');
+
+  if(cfg.sendMode==='meta'){
+    lines.push('--- META API ---');
+    lines.push('Phone ID: '+(cfg.metaPhoneId?'✅ Set ('+cfg.metaPhoneId.substring(0,8)+'...)':'❌ MISSING'));
+    lines.push('Token: '+(cfg.metaToken?'✅ Set ('+cfg.metaToken.substring(0,8)+'...)':'❌ MISSING'));
+    lines.push('Template: '+(cfg.metaTemplate||'(none = text message)'));
+    lines.push('Parent notify: '+(cfg.parentEnabled?'✅ ON':'❌ OFF'));
+    lines.push('Admin notify: '+(cfg.metaAdminEnabled?'✅ ON':'❌ OFF'));
+    lines.push('Admin phone: '+(cfg.metaAdminPhone||'❌ MISSING'));
+  } else {
+    lines.push('--- WA WEB ---');
+    lines.push('Parent notify: '+(cfg.parentEnabled?'✅ ON':'❌ OFF'));
+    lines.push('Admin notify: '+(cfg.adminEnabled?'✅ ON':'❌ OFF'));
+    lines.push('Admin phone: '+(cfg.adminPhone||'❌ MISSING'));
+    lines.push('Template: '+(cfg.tmplParent?'✅ Set':'⚠️ Using default'));
+  }
+
+  lines.push('');
+  lines.push('--- STUDENTS IN DB ---');
+  const stuCount=GS.students.length;
+  lines.push('Total students: '+stuCount);
+  if(stuCount===0){
+    lines.push('❌ Students DB empty! Firebase se sync check karo');
+  } else {
+    const withPhone=GS.students.filter(s=>s.phone&&s.phone.replace(/[^0-9]/g,'').length>=10).length;
+    lines.push('Phone wale students: '+withPhone+'/'+stuCount);
+    if(withPhone===0) lines.push('❌ Kisi bhi student ka phone nahi! Firebase DB mein phone field add karo');
+    // Show first 3 with phone issues
+    const noPhone=GS.students.filter(s=>!s.phone||s.phone.replace(/[^0-9]/g,'').length<10).slice(0,3);
+    noPhone.forEach(s=>lines.push('  ⚠️ '+s.studentName+' ('+s.admissionNumber+'): phone='+JSON.stringify(s.phone||'')));
+  }
+
+  alert(lines.join('
+'));
+}
+
 function gSendExitWA(pass){
   gLoadWAExit();
-  if(_gWAExitCfg.sendMode==='meta'&&_gWAExitCfg.metaPhoneId&&_gWAExitCfg.metaToken){
+
+  // Helper: WA open karo safely
+  function gWAOpen(url, delayMs){
+    setTimeout(()=>{
+      const w=window.open(url,'_blank');
+      if(!w){ window.location.href=url; }
+    }, delayMs||0);
+  }
+
+  // ── META API MODE ──
+  if(_gWAExitCfg.sendMode==='meta'){
+    if(!_gWAExitCfg.metaPhoneId||!_gWAExitCfg.metaToken){
+      gToast('⚠️ Meta WA: Phone ID ya Token missing — Settings check karo','err'); return;
+    }
     const stu=GS.students.find(s=>s.admissionNumber===pass.admissionNumber);
     const pPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
-    if(_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10){
-      gMetaExitSend(pPhone,pass).then(()=>gToast('📨 Meta WA sent to parent')).catch(e=>gToast('⚠️ Meta WA: '+e.message,'err'));
+    if(_gWAExitCfg.parentEnabled){
+      if(!stu){
+        gToast('⚠️ Student DB mein nahi mila (Adm: '+pass.admissionNumber+')','err');
+      } else if(!pPhone||pPhone.length<10){
+        gToast('⚠️ '+pass.studentName+' ka phone blank hai — DB mein add karo','err');
+      } else {
+        gMetaExitSend(pPhone,pass)
+          .then(()=>gToast('📨 Meta WA: Parent ko bheja ('+pPhone+')'))
+          .catch(e=>gToast('❌ Meta WA Parent: '+e.message,'err'));
+      }
     }
-    if(_gWAExitCfg.metaAdminEnabled&&_gWAExitCfg.metaAdminPhone){
-      gMetaExitSend(_gWAExitCfg.metaAdminPhone,pass).then(()=>gToast('📨 Meta WA sent to admin')).catch(e=>gToast('⚠️ Meta Admin WA: '+e.message,'err'));
+    if(_gWAExitCfg.metaAdminEnabled){
+      if(!_gWAExitCfg.metaAdminPhone){
+        gToast('⚠️ Meta WA: Admin phone set nahi — Settings mein daalo','err');
+      } else {
+        gMetaExitSend(_gWAExitCfg.metaAdminPhone,pass)
+          .then(()=>gToast('📨 Meta WA: Admin ko bheja'))
+          .catch(e=>gToast('❌ Meta WA Admin: '+e.message,'err'));
+      }
+    }
+    if(!_gWAExitCfg.parentEnabled&&!_gWAExitCfg.metaAdminEnabled){
+      gToast('⚠️ Meta WA: Parent aur Admin dono off hain — Settings check karo','err');
     }
     return;
   }
-  // WhatsApp Web fallback
+
+  // ── WHATSAPP WEB MODE ──
   const stu=GS.students.find(s=>s.admissionNumber===pass.admissionNumber);
   const pPhone=(stu?stu.phone||'':'').replace(/[^0-9]/g,'');
-  if(_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10){
-    window.location.href='whatsapp://send?phone='+pPhone+'&text='+encodeURIComponent(gBuildExitMsg(pass,_gWAExitCfg.tmplParent));
+  const aMsg='🔔 *Gate Exit Alert*\n\n👤 '+pass.studentName+' ('+pass.class+')\n🕐 Out: '+pass.gateOutTime+'\n👋 Picked by: '+pass.pickedUpBy+(pass.busNumber?'\n🚌 '+pass.busNumber:'');
+  let anyAction=false;
+
+  if(_gWAExitCfg.parentEnabled){
+    if(!stu){
+      gToast('⚠️ WA Web: Student DB mein nahi mila (Adm: '+pass.admissionNumber+')','err');
+    } else if(!pPhone||pPhone.length<10){
+      gToast('⚠️ WA Web: '+pass.studentName+' ka phone blank — DB update karo','err');
+    } else {
+      const url='whatsapp://send?phone='+pPhone+'&text='+encodeURIComponent(gBuildExitMsg(pass,_gWAExitCfg.tmplParent));
+      gWAOpen(url,0);
+      gToast('📱 WA Web: Parent open kar raha hai ('+pPhone+')');
+      anyAction=true;
+    }
   }
-  if(_gWAExitCfg.adminEnabled&&_gWAExitCfg.adminPhone){
-    const aMsg='🔔 *Gate Exit Alert*\n\n👤 '+pass.studentName+' ('+pass.class+')\n🕐 Out: '+pass.gateOutTime+'\n👋 Picked by: '+pass.pickedUpBy+(pass.busNumber?'\n🚌 '+pass.busNumber:'');
-    const delay=_gWAExitCfg.parentEnabled&&pPhone&&pPhone.length>=10?2000:0;
-    setTimeout(()=>{ window.location.href='whatsapp://send?phone='+_gWAExitCfg.adminPhone+'&text='+encodeURIComponent(aMsg); }, delay);
+  if(_gWAExitCfg.adminEnabled){
+    if(!_gWAExitCfg.adminPhone){
+      gToast('⚠️ WA Web: Admin phone set nahi — Settings mein daalo','err');
+    } else {
+      const url='whatsapp://send?phone='+_gWAExitCfg.adminPhone+'&text='+encodeURIComponent(aMsg);
+      gWAOpen(url, anyAction?2500:0);
+      anyAction=true;
+    }
+  }
+  if(!_gWAExitCfg.parentEnabled&&!_gWAExitCfg.adminEnabled){
+    gToast('⚠️ WA Web: Koi notification enable nahi — Settings → WhatsApp Gate-Out','err');
   }
 }
 async function gTestExitWA(){
@@ -4002,9 +4096,16 @@ async function gTestExitWA(){
     return;
   }
   // WA Web test
+  gLoadWAExit();
   const testPass={studentName:'Test Student',class:'X-A',gateOutTime:'03:30 PM',date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),busNumber:'Bus 5',pickedUpBy:'Parent'};
   const tp=document.getElementById('g-wa-exit-tmpl-parent');
-  window.open('whatsapp://send?text='+encodeURIComponent(gBuildExitMsg(testPass,tp?tp.value:'')),'_blank');
+  const testPhone=prompt('Test karne ke liye phone number daalo (91XXXXXXXXXX):','');
+  if(!testPhone||testPhone.trim().length<10){ gToast('⚠️ Valid phone number daalo','err'); return; }
+  const cleanPhone=testPhone.trim().replace(/[^0-9]/g,'');
+  const url='whatsapp://send?phone='+cleanPhone+'&text='+encodeURIComponent(gBuildExitMsg(testPass,tp?tp.value:''));
+  const w=window.open(url,'_blank');
+  if(!w) window.location.href=url;
+  gToast('📱 WA Web test: '+cleanPhone+' pe open kar raha hai');
 }
 
 async function gPunchOut(id){
@@ -4074,6 +4175,7 @@ function gShowModal(id){
       <div style="background:var(--green-l);border-radius:10px;padding:11px;text-align:center;grid-column:1/-1"><div class="lbl">Gate Out</div><div style="font-weight:700;font-size:14px;font-family:'JetBrains Mono',monospace;color:var(--green)">${p.gateOutTime||'—'}</div></div>
     </div>
     ${p.reason?`<div class="g-info" style="margin-bottom:13px">📝 ${gE(p.reason)}</div>`:''}
+    ${(()=>{ const stu=GS.students.find(s=>s.admissionNumber===p.admissionNumber); const ph=stu?stu.phone||'':''; return ph?`<div style="display:flex;align-items:center;gap:10px;background:var(--blue-l);border:1.5px solid var(--blue);border-radius:10px;padding:10px 14px;margin-bottom:13px"><span style="font-size:18px">📱</span><div><div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">Parent Phone</div><a href="tel:${ph}" style="font-size:15px;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace;text-decoration:none">${gE(ph)}</a></div><a href="whatsapp://send?phone=${ph.replace(/[^0-9]/g,'')}&text=${encodeURIComponent('Regarding '+p.studentName+' (Class '+p.class+')')}" style="margin-left:auto;background:#25D366;color:#fff;border-radius:8px;padding:6px 11px;font-size:11px;font-weight:700;font-family:var(--sans);text-decoration:none">WA</a></div>`:''})()}
   `;
   document.getElementById('g-pass-modal').style.display='flex';
 }
