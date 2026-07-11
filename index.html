@@ -3632,8 +3632,18 @@ function gGoTab(n,btn){
   document.querySelectorAll('.g-tb').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   if(n==='passes')gRenderPasses();
-  if(n==='morning'){ _btActiveTab='morn'; btLoad(); btRenderMorning(); btRenderSummary(); btCheckMatch(); if(_btFbCfg.url&&_btFbCfg.code) btFbPull(); }
-  if(n==='evening'){ _btActiveTab='eve'; btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch(); if(_btFbCfg.url&&_btFbCfg.code) btFbPull(); }
+  if(n==='morning'){
+    _btActiveTab='morn'; btFbLoadCfg(); btLoad(); btRenderMorning(); btRenderSummary(); btCheckMatch();
+    if(_btFbCfg.url&&_btFbCfg.code){
+      btFbPull(true).then(()=>{ btRenderMorning(); btRenderSummary(); btCheckMatch(); });
+    }
+  }
+  if(n==='evening'){
+    _btActiveTab='eve'; btFbLoadCfg(); btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch();
+    if(_btFbCfg.url&&_btFbCfg.code){
+      btFbPull(true).then(()=>{ btRenderEvening(); btRenderSummary(); btCheckMatch(); });
+    }
+  }
 }
 
 function gRenderPasses(){
