@@ -61,20 +61,7 @@ function pwaHandleIconUpload(input){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
 }
-// ── Install prompt ──
-window._pwaPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
-window.addEventListener('appinstalled',()=>{window._pwaPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ Installed!';b.style.opacity='.6';b.onclick=null;});document.getElementById('pwa-mobile-banner') && (document.getElementById('pwa-mobile-banner').style.display='none');});
-window.addEventListener('beforeinstallprompt',e=>{
-  // Also show the mobile banner if on mobile and not dismissed
-  setTimeout(()=>{
-    const banner = document.getElementById('pwa-mobile-banner');
-    if(banner && window.innerWidth<=768){
-      banner.style.display='flex';
-    }
-  }, 2500);
-});
-function triggerInstall(){if(window._pwaPrompt){window._pwaPrompt.prompt();}else{alert('To install:\n📱 iOS: Share → Add to Home Screen\n🤖 Android: ⋮ menu → Add to Home Screen\n💻 Desktop: ⊕ in address bar');}}
+// ── Custom install banner/buttons removed — Chrome's own native install UI (address bar icon / ⋮ menu) still works ──
 </script>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -647,7 +634,6 @@ body.dark .sb-btn.active-gate { background: rgba(34,197,94,.1); }
 }
 @media (min-width: 769px) {
   .screen { top: 0; bottom: 0; }
-  .pwa-install-btn { display: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1693,7 +1679,7 @@ body.dark {
       </button>
     </nav>
     <div class="sb-bottom">
-      <button class="pwa-install-btn" onclick="triggerInstall()" style="display:none;align-items:center;gap:8px;background:rgba(21,128,61,.12);border:1.5px solid rgba(21,128,61,.3);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;color:var(--green);font-family:var(--sans);margin-bottom:8px">📲 <span data-i18n="install_app">Install App</span></button>
+
       <!-- Language Switcher -->
       <div id="lang-dropdown-wrap">
         <button class="lang-trigger" id="lang-trigger" onclick="toggleLangDropdown()" aria-haspopup="true">
@@ -1719,7 +1705,7 @@ body.dark {
         <div class="home-eyebrow">🪷 Lotus International School</div>
         <div class="home-h1" data-i18n="home_title">eGateSys Dashboard</div>
         <div class="home-date" id="home-date-txt"></div>
-        <button class="pwa-install-btn" onclick="triggerInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#15803d;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 <span data-i18n='install_app'>Install App</span></button>
+
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -2933,16 +2919,7 @@ Regards,
   <button class="mt-theme" onclick="handleMtTheme()" id="mt-theme-btn">🌙</button>
 </div>
 
-<!-- Mobile PWA install banner -->
-<div id="pwa-mobile-banner" style="display:none;position:fixed;bottom:64px;left:8px;right:8px;z-index:800;background:var(--green);color:#fff;border-radius:14px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.25);align-items:center;gap:10px;font-family:var(--sans)">
-  <div style="font-size:24px;flex-shrink:0">📲</div>
-  <div style="flex:1;min-width:0">
-    <div style="font-size:13px;font-weight:800;margin-bottom:2px" data-i18n="pwa_banner_title">Install eGateSys</div>
-    <div style="font-size:11px;opacity:.88" data-i18n="pwa_banner_sub">Add to Home Screen for quick access</div>
-  </div>
-  <button onclick="triggerInstall();document.getElementById('pwa-mobile-banner').style.display='none'" style="background:#fff;color:var(--green);border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--sans);flex-shrink:0" data-i18n="pwa_banner_btn">Install</button>
-  <button onclick="document.getElementById('pwa-mobile-banner').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;opacity:.8">✕</button>
-</div>
+
 
 <!-- Mobile bottom nav -->
 <nav id="bottom-nav">
