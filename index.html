@@ -8,30 +8,29 @@
 <meta name="apple-mobile-web-app-title" content="eGateSys"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#15803d"/>
-<link id="pwa-manifest" rel="manifest"/>
-<link id="pwa-favicon" rel="icon" type="image/svg+xml"/>
+<link id="pwa-manifest" rel="manifest" href="manifest.json"/>
+<link id="pwa-favicon" rel="icon" type="image/png" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
 <title>GateSys — Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script>
-// ── PWA Manifest (inline blob) ──
+// ── PWA Manifest (static file by default; overridden by custom icon if user uploaded one) ──
 (function(){
-  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
   const customIcon = localStorage.getItem('pwa-custom-icon');
-  const icon = customIcon || defaultIcon;
-  const iconType = customIcon ? (customIcon.startsWith('data:image/png') ? 'image/png' : customIcon.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml') : 'image/svg+xml';
-  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:icon,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
+  if(!customIcon) return; // static manifest.json + icon-192.png/icon-512.png already linked in <head>
+  const iconType = customIcon.startsWith('data:image/png') ? 'image/png' : customIcon.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml';
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,scope:'./',display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:customIcon,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:customIcon,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
-  // Set favicon
   const fav=document.getElementById('pwa-favicon');
-  if(fav){ fav.href=icon; fav.type=iconType; }
+  if(fav){ fav.href=customIcon; fav.type=iconType; }
 })();
 // ── Custom Icon helpers ──
 function pwaSetCustomIcon(dataUrl){
   localStorage.setItem('pwa-custom-icon', dataUrl);
   // Update manifest blob
   const iconType = dataUrl.startsWith('data:image/png') ? 'image/png' : dataUrl.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml';
-  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:dataUrl,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:dataUrl,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,scope:'./',display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:dataUrl,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:dataUrl,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
   // Update favicon live
@@ -43,13 +42,11 @@ function pwaSetCustomIcon(dataUrl){
 }
 function pwaResetIcon(){
   localStorage.removeItem('pwa-custom-icon');
-  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
   const fav=document.getElementById('pwa-favicon');
-  if(fav){ fav.href=defaultIcon; fav.type='image/svg+xml'; }
+  if(fav){ fav.href='icon-192.png'; fav.type='image/png'; }
   const prev=document.getElementById('pwa-icon-preview');
-  if(prev) prev.src=defaultIcon;
-  const blob=new Blob([JSON.stringify({name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:defaultIcon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:defaultIcon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]})],{type:'application/manifest+json'});
-  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  if(prev) prev.src='icon-192.png';
+  document.getElementById('pwa-manifest').href='manifest.json';
 }
 function pwaHandleIconUpload(input){
   const file=input.files[0];
@@ -60,10 +57,9 @@ function pwaHandleIconUpload(input){
   reader.onload=function(e){ pwaSetCustomIcon(e.target.result); document.getElementById('pwa-icon-source').textContent='✅ Custom icon set'; };
   reader.readAsDataURL(file);
 }
-// ── Service Worker ──
+// ── Service Worker (static file, more reliable for install detection) ──
 if('serviceWorker' in navigator){
-  const sw=`const C='egatesys-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./'])).then(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(h=>{const f=fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;}).catch(()=>null);return h||f;}).catch(()=>caches.match('./')));});`;
-  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'})),{scope:'./'}).catch(()=>{});
+  navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
 }
 // ── Install prompt ──
 window._pwaPrompt=null;
