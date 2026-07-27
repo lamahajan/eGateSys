@@ -15,8 +15,9 @@
 <script>
 // ── PWA Manifest (inline blob) ──
 (function(){
-  const icon='https://raw.githubusercontent.com/lamahajan/eGateSys/main/icon-512.png';
-  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:'image/png',purpose:'any maskable'},{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  const icon='https://raw.githubusercontent.com/lamahajan/eGateSys/main/icon.png';
+  const startUrl=new URL('./'+window.location.search, window.location.href).href;
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:startUrl,scope:new URL('./', window.location.href).href,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any'},{src:icon,sizes:'512x512',type:'image/png',purpose:'maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
   // Set favicon
