@@ -8,29 +8,30 @@
 <meta name="apple-mobile-web-app-title" content="eGateSys"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#15803d"/>
-<link id="pwa-manifest" rel="manifest" href="manifest.json"/>
-<link id="pwa-favicon" rel="icon" type="image/png" href="icon-192.png"/>
-<link rel="apple-touch-icon" href="icon-192.png"/>
-<title>eGateSys</title>
+<link id="pwa-manifest" rel="manifest"/>
+<link id="pwa-favicon" rel="icon" type="image/svg+xml"/>
+<title>GateSys — Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script>
-// ── PWA Manifest (static file by default; overridden by custom icon if user uploaded one) ──
+// ── PWA Manifest (inline blob) ──
 (function(){
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
   const customIcon = localStorage.getItem('pwa-custom-icon');
-  if(!customIcon) return; // static manifest.json + icon-192.png/icon-512.png already linked in <head>
-  const iconType = customIcon.startsWith('data:image/png') ? 'image/png' : customIcon.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml';
-  const m={name:'eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,scope:'./',display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:customIcon,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:customIcon,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
+  const icon = customIcon || defaultIcon;
+  const iconType = customIcon ? (customIcon.startsWith('data:image/png') ? 'image/png' : customIcon.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml') : 'image/svg+xml';
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:icon,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:icon,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+  // Set favicon
   const fav=document.getElementById('pwa-favicon');
-  if(fav){ fav.href=customIcon; fav.type=iconType; }
+  if(fav){ fav.href=icon; fav.type=iconType; }
 })();
 // ── Custom Icon helpers ──
 function pwaSetCustomIcon(dataUrl){
   localStorage.setItem('pwa-custom-icon', dataUrl);
   // Update manifest blob
   const iconType = dataUrl.startsWith('data:image/png') ? 'image/png' : dataUrl.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/svg+xml';
-  const m={name:'eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,scope:'./',display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:dataUrl,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:dataUrl,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
+  const m={name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:dataUrl,sizes:'192x192',type:iconType,purpose:'any maskable'},{src:dataUrl,sizes:'512x512',type:iconType,purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
   // Update favicon live
@@ -42,11 +43,13 @@ function pwaSetCustomIcon(dataUrl){
 }
 function pwaResetIcon(){
   localStorage.removeItem('pwa-custom-icon');
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
   const fav=document.getElementById('pwa-favicon');
-  if(fav){ fav.href='icon-192.png'; fav.type='image/png'; }
+  if(fav){ fav.href=defaultIcon; fav.type='image/svg+xml'; }
   const prev=document.getElementById('pwa-icon-preview');
-  if(prev) prev.src='icon-192.png';
-  document.getElementById('pwa-manifest').href='manifest.json';
+  if(prev) prev.src=defaultIcon;
+  const blob=new Blob([JSON.stringify({name:'Lotus eGateSys',short_name:'eGateSys',description:'Gate Pass, Attendance & Visitor Register',start_url:'./'+window.location.search,display:'standalone',background_color:'#f2efe8',theme_color:'#15803d',orientation:'portrait',icons:[{src:defaultIcon,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:defaultIcon,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]})],{type:'application/manifest+json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
 }
 function pwaHandleIconUpload(input){
   const file=input.files[0];
@@ -57,11 +60,25 @@ function pwaHandleIconUpload(input){
   reader.onload=function(e){ pwaSetCustomIcon(e.target.result); document.getElementById('pwa-icon-source').textContent='✅ Custom icon set'; };
   reader.readAsDataURL(file);
 }
-// ── Service Worker (static file, more reliable for install detection) ──
+// ── Service Worker ──
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js', {scope:'./'}).catch(()=>{});
+  const sw=`const C='egatesys-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./'])).then(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(h=>{const f=fetch(e.request).then(r=>{if(r&&r.status===200){const cl=r.clone();caches.open(C).then(c=>c.put(e.request,cl));}return r;}).catch(()=>null);return h||f;}).catch(()=>caches.match('./')));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'})),{scope:'./'}).catch(()=>{});
 }
-// ── Custom install banner/buttons removed — Chrome's own native install UI (address bar icon / ⋮ menu) still works ──
+// ── Install prompt ──
+window._pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
+window.addEventListener('appinstalled',()=>{window._pwaPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ Installed!';b.style.opacity='.6';b.onclick=null;});document.getElementById('pwa-mobile-banner') && (document.getElementById('pwa-mobile-banner').style.display='none');});
+window.addEventListener('beforeinstallprompt',e=>{
+  // Also show the mobile banner if on mobile and not dismissed
+  setTimeout(()=>{
+    const banner = document.getElementById('pwa-mobile-banner');
+    if(banner && window.innerWidth<=768){
+      banner.style.display='flex';
+    }
+  }, 2500);
+});
+function triggerInstall(){if(window._pwaPrompt){window._pwaPrompt.prompt();}else{alert('To install:\n📱 iOS: Share → Add to Home Screen\n🤖 Android: ⋮ menu → Add to Home Screen\n💻 Desktop: ⊕ in address bar');}}
 </script>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -1679,7 +1696,7 @@ body.dark {
       </button>
     </nav>
     <div class="sb-bottom">
-
+      <button class="pwa-install-btn" onclick="triggerInstall()" style="display:none;align-items:center;gap:8px;background:rgba(21,128,61,.12);border:1.5px solid rgba(21,128,61,.3);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;color:var(--green);font-family:var(--sans);margin-bottom:8px">📲 <span data-i18n="install_app">Install App</span></button>
       <!-- Language Switcher -->
       <div id="lang-dropdown-wrap">
         <button class="lang-trigger" id="lang-trigger" onclick="toggleLangDropdown()" aria-haspopup="true">
@@ -1705,7 +1722,7 @@ body.dark {
         <div class="home-eyebrow">🪷 Lotus International School</div>
         <div class="home-h1" data-i18n="home_title">eGateSys Dashboard</div>
         <div class="home-date" id="home-date-txt"></div>
-
+        <button class="pwa-install-btn" onclick="triggerInstall()" style="display:none;margin-top:12px;align-items:center;gap:7px;background:#15803d;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">📲 <span data-i18n='install_app'>Install App</span></button>
       </div>
       <div class="home-body">
         <div class="home-cards">
@@ -2216,6 +2233,48 @@ Regards,
                     style="flex:1;padding:10px;background:#25D366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">💾 Save</button>
                   <button type="button" onclick="gTestExitWA()"
                     style="padding:10px 14px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)">🧪 Test</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── App Icon & Favicon ── -->
+            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:4px">
+              <button type="button" onclick="gToggle('g-icon-body','g-icon-arrow')"
+                style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:none;border:none;cursor:pointer;text-align:left">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(181,136,62,.1);border:1px solid rgba(181,136,62,.25);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🖼️</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:800;color:var(--text);font-family:var(--sans)">App Icon &amp; Favicon</div>
+                  <div style="font-size:11px;color:var(--sub);font-family:var(--sans);margin-top:1px">PWA home screen icon + browser tab favicon</div>
+                </div>
+                <span id="g-icon-arrow" style="font-size:11px;color:var(--sub);transition:transform .2s;transform:rotate(0deg);flex-shrink:0">▶</span>
+              </button>
+              <div id="g-icon-body" style="display:none;padding:0 14px 14px;border-top:1px solid var(--border)">
+                <div style="height:12px"></div>
+                <!-- Current icon preview -->
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px">
+                  <img id="pwa-icon-preview" src=""
+                    style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:2px solid var(--border);background:var(--bg3);flex-shrink:0"
+                    onerror="this.style.display='none'" onload="this.style.display='block'"/>
+                  <div>
+                    <div style="font-size:12px;font-weight:800;color:var(--text);font-family:var(--sans)">Current Icon</div>
+                    <div id="pwa-icon-source" style="font-size:10px;color:var(--sub);font-family:var(--mono);margin-top:2px">Default icon</div>
+                    <div style="font-size:10px;color:var(--mut);margin-top:4px;font-family:var(--sans)">Used as PWA icon &amp; browser favicon</div>
+                  </div>
+                </div>
+                <!-- Upload -->
+                <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:6px;font-family:var(--sans)">UPLOAD NEW ICON</label>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;background:var(--bg2);border:2px dashed var(--border2);border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:var(--green);font-family:var(--sans);transition:border-color .2s"
+                    onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border2)'">
+                    📁 Choose Image (PNG / JPG / SVG)
+                    <input type="file" accept="image/*" style="display:none" onchange="pwaHandleIconUpload(this)">
+                  </label>
+                  <div style="font-size:10px;color:var(--mut);font-family:var(--sans);text-align:center">Best size: 512×512 px · Max 500 KB · Square image recommended</div>
+                </div>
+                <!-- Reset -->
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                  <button type="button" onclick="pwaResetIcon();document.getElementById('pwa-icon-source').textContent='Default icon'"
+                    style="width:100%;padding:9px;background:none;color:var(--sub);border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🔄 Reset to Default Icon</button>
                 </div>
               </div>
             </div>
@@ -2919,7 +2978,16 @@ Regards,
   <button class="mt-theme" onclick="handleMtTheme()" id="mt-theme-btn">🌙</button>
 </div>
 
-
+<!-- Mobile PWA install banner -->
+<div id="pwa-mobile-banner" style="display:none;position:fixed;bottom:64px;left:8px;right:8px;z-index:800;background:var(--green);color:#fff;border-radius:14px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.25);align-items:center;gap:10px;font-family:var(--sans)">
+  <div style="font-size:24px;flex-shrink:0">📲</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:800;margin-bottom:2px" data-i18n="pwa_banner_title">Install eGateSys</div>
+    <div style="font-size:11px;opacity:.88" data-i18n="pwa_banner_sub">Add to Home Screen for quick access</div>
+  </div>
+  <button onclick="triggerInstall();document.getElementById('pwa-mobile-banner').style.display='none'" style="background:#fff;color:var(--green);border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--sans);flex-shrink:0" data-i18n="pwa_banner_btn">Install</button>
+  <button onclick="document.getElementById('pwa-mobile-banner').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;opacity:.8">✕</button>
+</div>
 
 <!-- Mobile bottom nav -->
 <nav id="bottom-nav">
@@ -4041,6 +4109,13 @@ function gOpenSettings(){
   // Load WA + Telegram fields
   gLoadWAExit();
   gLoadTelegram();
+  // Init icon preview
+  const customIcon = localStorage.getItem('pwa-custom-icon');
+  const defaultIcon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%2315803d"/><text x="50" y="72" font-size="58" text-anchor="middle">🚪</text></svg>');
+  const prev = document.getElementById('pwa-icon-preview');
+  const src = document.getElementById('pwa-icon-source');
+  if(prev){ prev.src = customIcon || defaultIcon; }
+  if(src){ src.textContent = customIcon ? '✅ Custom icon set' : 'Default icon'; }
   btFbLoadCfgF();
 }
 function gCloseSettings(){
