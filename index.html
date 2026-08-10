@@ -9,31 +9,39 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#15803d"/>
 <link rel="manifest" href="./manifest.json"/>
-<link rel="icon" type="image/png" href="./icon-192.png"/>
+<link rel="icon" href="./icon-192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="./icon-192.png"/>
 <title>GateSys — Lotus International School</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script>
-// ── Service Worker (external file) ──
+// ── Service Worker registration ──
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', {scope:'./'}).catch(()=>{});
+  });
 }
 // ── Install prompt ──
 window._pwaPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._pwaPrompt=e;document.querySelectorAll('.pwa-install-btn').forEach(b=>b.style.display='flex');});
-window.addEventListener('appinstalled',()=>{window._pwaPrompt=null;document.querySelectorAll('.pwa-install-btn').forEach(b=>{b.textContent='✅ Installed!';b.style.opacity='.6';b.onclick=null;});document.getElementById('pwa-mobile-banner') && (document.getElementById('pwa-mobile-banner').style.display='none');});
-window.addEventListener('beforeinstallprompt',e=>{
-  // Also show the mobile banner if on mobile and not dismissed
-  setTimeout(()=>{
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  window._pwaPrompt = e;
+  document.querySelectorAll('.pwa-install-btn').forEach(b => b.style.display='flex');
+  setTimeout(() => {
     const banner = document.getElementById('pwa-mobile-banner');
-    if(banner && window.innerWidth<=768){
-      banner.style.display='flex';
-    }
+    if(banner && window.innerWidth<=768){ banner.style.display='flex'; }
   }, 2500);
 });
-function triggerInstall(){if(window._pwaPrompt){window._pwaPrompt.prompt();}else{alert('To install:\n📱 iOS: Share → Add to Home Screen\n🤖 Android: ⋮ menu → Add to Home Screen\n💻 Desktop: ⊕ in address bar');}}
+window.addEventListener('appinstalled', () => {
+  window._pwaPrompt = null;
+  document.querySelectorAll('.pwa-install-btn').forEach(b => { b.textContent='✅ Installed!'; b.style.opacity='.6'; b.onclick=null; });
+  const banner = document.getElementById('pwa-mobile-banner');
+  if(banner) banner.style.display='none';
+});
+function triggerInstall(){
+  if(window._pwaPrompt){ window._pwaPrompt.prompt(); }
+  else{ alert('To install:\n📱 iOS: Share → Add to Home Screen\n🤖 Android: ⋮ menu → Add to Home Screen\n💻 Desktop: ⊕ in address bar'); }
+}
 </script>
-
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
@@ -2190,6 +2198,7 @@ Regards,
               </div>
             </div>
 
+
           </div><!-- /cards -->
         </div><!-- /g-set-ct -->
       </div><!-- /vis-settings-panel -->
@@ -2899,6 +2908,7 @@ Regards,
   <button onclick="triggerInstall();document.getElementById('pwa-mobile-banner').style.display='none'" style="background:#fff;color:var(--green);border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--sans);flex-shrink:0" data-i18n="pwa_banner_btn">Install</button>
   <button onclick="document.getElementById('pwa-mobile-banner').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;opacity:.8">✕</button>
 </div>
+
 
 <!-- Mobile bottom nav -->
 <nav id="bottom-nav">
@@ -5879,13 +5889,13 @@ const _T = {
     nav_att:          'Attendance',
     nav_vis:          'Visitor Register',
     nav_vis_short:    'Visitors',
-    // Sidebar bottom
-    dark_mode:        'Dark Mode',
-    light_mode:       'Light Mode',
     install_app:      'Install App',
     pwa_banner_title: 'Install eGateSys',
     pwa_banner_sub:   'Add to Home Screen for quick access',
     pwa_banner_btn:   'Install',
+    // Sidebar bottom
+    dark_mode:        'Dark Mode',
+    light_mode:       'Light Mode',
     settings:         'Settings',
     // Home screen
     home_title:       'eGateSys Dashboard',
@@ -6061,13 +6071,13 @@ const _T = {
     nav_att:          'उपस्थिति',
     nav_vis:          'विज़िटर रजिस्टर',
     nav_vis_short:    'विज़िटर',
-    // Sidebar bottom
-    dark_mode:        'डार्क मोड',
-    light_mode:       'लाइट मोड',
     install_app:      'ऐप इंस्टॉल करें',
     pwa_banner_title: 'eGateSys इंस्टॉल करें',
     pwa_banner_sub:   'होम स्क्रीन पर जोड़ें — आसान पहुंच',
     pwa_banner_btn:   'इंस्टॉल',
+    // Sidebar bottom
+    dark_mode:        'डार्क मोड',
+    light_mode:       'लाइट मोड',
     settings:         'सेटिंग्स',
     // Home screen
     home_title:       'eGateSys डैशबोर्ड',
@@ -6241,13 +6251,13 @@ const _T = {
     nav_att:          'ਹਾਜ਼ਰੀ',
     nav_vis:          'ਵਿਜ਼ਿਟਰ ਰਜਿਸਟਰ',
     nav_vis_short:    'ਵਿਜ਼ਿਟਰ',
-    // Sidebar bottom
-    dark_mode:        'ਡਾਰਕ ਮੋਡ',
-    light_mode:       'ਲਾਈਟ ਮੋਡ',
     install_app:      'ਐਪ ਇੰਸਟਾਲ ਕਰੋ',
     pwa_banner_title: 'eGateSys ਇੰਸਟਾਲ ਕਰੋ',
     pwa_banner_sub:   'ਹੋਮ ਸਕਰੀਨ ਤੇ ਜੋੜੋ — ਆਸਾਨ ਪਹੁੰਚ',
     pwa_banner_btn:   'ਇੰਸਟਾਲ',
+    // Sidebar bottom
+    dark_mode:        'ਡਾਰਕ ਮੋਡ',
+    light_mode:       'ਲਾਈਟ ਮੋਡ',
     settings:         'ਸੈਟਿੰਗਾਂ',
     // Home screen
     home_title:       'eGateSys ਡੈਸ਼ਬੋਰਡ',
