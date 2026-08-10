@@ -1865,7 +1865,7 @@ body.dark {
         <div class="g-dot" id="g-sdot"></div>
         <span id="g-stxt"></span>
         <span style="margin-left:auto;opacity:.6;font-size:10px" id="g-stim"></span>
-        <button onclick="gFetchAll()" style="background:none;border:none;cursor:pointer;color:currentColor;font-size:16px;margin-left:7px;line-height:1">↻</button>
+        <button onclick="gManualRefresh()" style="background:none;border:none;cursor:pointer;color:currentColor;font-size:16px;margin-left:7px;line-height:1">↻</button>
       </div>
 
       <!-- Header -->
@@ -2048,7 +2048,7 @@ body.dark {
                     <input type="checkbox" id="g-bus-edit-enabled" style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0" onchange="gSaveBusEditSetting()" checked>
                   </label>
                 </div>
-                <button type="button" onclick="gFetchAll().then(()=>{gRenderBuses();gToast('🚌 Bus list refreshed')})"
+                <button type="button" onclick="gRefreshBusesAndStudents().then(()=>{gRenderBuses();gToast('🚌 Bus list refreshed')})"
                   style="width:100%;margin-bottom:10px;padding:9px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🔄 Refresh from Firebase</button>
                 <div id="g-buslist"></div>
                 <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
@@ -3335,11 +3335,7 @@ window.addEventListener('load', () => {
 ════════════════════════════════════════════════════ -->
 <script>
 const GS = { students:[], passes:[], buses:[], lastMod:0 };
-// gLocalMod persisted — page reload pe full fetch nahi hoga agar Firebase nahi badla
-let gLocalMod=parseInt(localStorage.getItem('gp_local_mod')||'0',10)||0;
-// gSyncTs — max _ts of passes, incremental fetch ke liye
-let gSyncTs=parseInt(localStorage.getItem('gp_sync_ts')||'0',10)||0;
-let gCfg={url:'',code:''}, gSyncIv=null, gFilter='ALL', gOpenCards={};
+let gCfg={url:'',code:''}, gFilter='ALL', gOpenCards={};
 const G_PASS='mahajan';
 
 window.addEventListener('load', () => {
@@ -3362,168 +3358,12 @@ function gSaveLocal(){
   try{
     // Full pass data save karein including pickerPhoto
     localStorage.setItem('gp_local',JSON.stringify({students:GS.students,passes:GS.passes,buses:GS.buses}));
-    localStorage.setItem('gp_local_mod',String(gLocalMod));
-    localStorage.setItem('gp_sync_ts',String(gSyncTs));
-  }catch(e){
-    try{localStorage.setItem('gp_local_mod',String(gLocalMod));localStorage.setItem('gp_sync_ts',String(gSyncTs));}catch(e2){}
-  }
+  }catch(e){}
 }
 
-async function gFetchAll(){
-  if(!gCfg.url||!gCfg.code)return;
-  gSetSS('ing');
-  try{
-    const today=gTodayStr();
-    const toArr=v=>Array.isArray(v)?v:(v&&v.__empty)?[]:(v!=null?Object.values(v):[]);
-
-    // Step 1: lastMod + aaj ke passes ka COUNT ek saath fetch karo
-    // ✅ FIX: shallow=true aur orderBy Firebase RTDB mein compatible nahi hain —
-    // shallow hata diya; ab direct filtered query se count milega (correct data)
-    const [lmr, cntR] = await Promise.all([
-      fetch(`${gCfg.url}/${gCfg.code}/lastMod.json`),
-      fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="date"&equalTo="${today}"`)
-    ]);
-    if(!lmr.ok) throw 0;
-    const sm = await lmr.json();
-
-    // Firebase pe aaj ke passes ka count
-    let fbTodayCount = -1;
-    if(cntR.ok){
-      const cntData = await cntR.json();
-      fbTodayCount = (cntData && typeof cntData==='object' && !cntData.error)
-        ? Object.keys(cntData).length : -1;
-    }
-
-    const localTodayCount = GS.passes.filter(p=>p.date===today).length;
-    const _missingPhotos  = GS.passes.filter(p=>p.date===today&&p._hasPhoto&&!p.pickerPhoto).length;
-
-    // COUNT RECONCILIATION — yahi tha asli bug
-    // lastMod same ho tab bhi agar Firebase count != local count → force full refetch
-    const countMismatch = fbTodayCount >= 0 && fbTodayCount !== localTodayCount;
-    const needsRefresh  = countMismatch || _missingPhotos > 0 || sm !== gLocalMod || localTodayCount === 0;
-
-    if(!needsRefresh){
-      gSetSS('ok'); gUpdBadge(); return;
-    }
-
-    if(countMismatch){
-      console.info(`eGateSys: Pass count mismatch — Firebase: ${fbTodayCount}, Local: ${localTodayCount}. Force full refetch.`);
-    }
-
-    // Step 2: buses + students fetch karo
-    const [bR,sR]=await Promise.all([
-      fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
-      fetch(`${gCfg.url}/${gCfg.code}/students.json`)
-    ]);
-    if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
-    if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
-
-    // Step 3: Passes fetch
-
-    function gMergePassesFromFirebase(todayFromFirebase){
-      todayFromFirebase.forEach(np=>{
-        const idx=GS.passes.findIndex(x=>x.id===np.id);
-        // Restore locally cached photo before merge
-        if(np._hasPhoto&&!np.pickerPhoto){
-          const cached=localStorage.getItem('gp_photo_'+np.id);
-          if(cached)np.pickerPhoto=cached;
-        }
-        if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
-        else GS.passes.push(np);
-      });
-      // Firebase pe nahi hain (delete ho gaye) — local se bhi hatao
-      const fbIds=new Set(todayFromFirebase.map(p=>p.id));
-      GS.passes=GS.passes.filter(p=>p.date!==today||fbIds.has(p.id));
-      gSyncTs=GS.passes.reduce((m,p)=>Math.max(m,p._ts||0),0)||Date.now();
-    }
-
-    async function gFullFetch(){
-      // Passes aur gateout node ek saath fetch karo
-      const [pr, gor] = await Promise.all([
-        fetch(`${gCfg.url}/${gCfg.code}/passes.json`),
-        fetch(`${gCfg.url}/${gCfg.code}/gateout.json`)
-      ]);
-      if(!pr.ok) return;
-      const raw=await pr.json();
-      if(raw&&raw.error) throw new Error('Firebase: '+raw.error);
-      const todayPasses=toArr(raw).filter(p=>p&&p.id&&p.date===today);
-      // gateout node se gateOutTime merge karo (dono Gate devices sync rehti hain)
-      if(gor.ok){
-        const goData=await gor.json();
-        if(goData&&typeof goData==='object'){
-          todayPasses.forEach(p=>{
-            const rec=goData[p.id];
-            if(rec&&rec.gateOutTime&&!p.gateOutTime){
-              p.gateOutTime=rec.gateOutTime;
-              if(rec.busNumber)p.busNumber=rec.busNumber;
-              if(rec._ts)p._ts=rec._ts;
-            }
-          });
-        }
-      }
-      gMergePassesFromFirebase(todayPasses);
-    }
-
-    // ✅ FIX: lastMod change pe bhi full fetch — sirf incremental pe rely nahi karte
-    // Warna: eAcademics ki passes (lastMod change + _ts purana) miss ho jaati thi
-    const lastModChanged = sm !== gLocalMod;
-    if(countMismatch || gSyncTs===0 || lastModChanged){
-      // countMismatch case mein already cntData mein aaj ki passes hain — reuse karo
-      if(countMismatch && cntR.ok){
-        // cntR already consumed hai (json() already called), full fetch se fresh data lo
-        await gFullFetch();
-      } else {
-        await gFullFetch();
-      }
-    } else {
-      // Incremental: sirf naye/updated passes (_ts > gSyncTs) — missing photos ke liye
-      const pr=await fetch(`${gCfg.url}/${gCfg.code}/passes.json?orderBy="_ts"&startAt=${gSyncTs+1}`);
-      if(pr.ok){
-        const raw=await pr.json();
-        if(raw&&raw.error){
-          // _ts index nahi hai Firebase mein — full fetch fallback
-          console.warn('eGateSys: Firebase _ts index missing, falling back to full fetch. Add ".indexOn":["_ts"] in DB rules for bandwidth saving.');
-          gSyncTs=0;
-          await gFullFetch();
-        } else if(raw && typeof raw==='object'){
-          const newPasses=Object.values(raw).filter(p=>p&&p.id&&p.date===today);
-          newPasses.forEach(np=>{
-            const idx=GS.passes.findIndex(x=>x.id===np.id);
-            if(idx>=0) GS.passes[idx]={...GS.passes[idx],...np};
-            else GS.passes.push(np);
-          });
-          const maxTs=newPasses.reduce((m,p)=>Math.max(m,p._ts||0),gSyncTs);
-          if(maxTs>gSyncTs) gSyncTs=maxTs;
-        }
-      }
-    }
-
-    gLocalMod=sm||0;
-    gSaveLocal();gRenderPasses();
-    // Fetch missing photos from /photos/ node (set by index app)
-    const _gToday=gTodayStr();
-    const _gYest=new Date(Date.now()-86400000).toISOString().slice(0,10);
-    GS.passes
-      .filter(p=>p._hasPhoto&&!p.pickerPhoto&&(p.date===_gToday||p.date===_gYest))
-      .slice(0,10)
-      .forEach(async p=>{
-        try{
-          const r=await fetch(`${gCfg.url}/${gCfg.code}/photos/${p.id}.json`);
-          if(!r.ok)return;
-          const ph=await r.json();
-          if(ph&&typeof ph==='string'&&ph.length>10){
-            p.pickerPhoto=ph;
-            try{localStorage.setItem('gp_photo_'+p.id,ph);}catch(e){}
-            gRenderPasses();
-          }
-        }catch(e){}
-      });
-    if(document.getElementById('g-set-ct')?.style.display!=='none')gRenderBuses();
-    gSetSS('ok');gUpdBadge();
-    if(typeof homeUpdateBusTally==='function')homeUpdateBusTally();
-    if(typeof btSyncAndRender==='function')btSyncAndRender();
-  }catch{gSetSS('err');}
-}
+// gFetchAll (old lastMod/count-polling fetch) removed — replaced entirely by the
+// EventSource-based gStartPassesStream()/gStartGateoutStream() below, which mirror
+// changes as they happen instead of polling and comparing signatures.
 function gUpdBadge(){
   const all=GS.passes.filter(p=>p.date===gTodayStr());
   const pend=all.filter(p=>!p.gateOutTime).length;
@@ -3533,24 +3373,15 @@ function gUpdBadge(){
   const bnDot=document.getElementById('bn-dot');if(bnDot)bnDot.classList.toggle('show',pend>0);
 }
 async function gPush(k){
+  // Only used for 'buses' now — passes go through /gateout/ writes in gPunchOut,
+  // and are reflected back via the live passes stream, not this generic push.
   gSaveLocal();if(!gCfg.url||!gCfg.code)return;
   GS.lastMod=Date.now();
-  // ✅ FIX: gLocalMod update nahi karte here — taaki next poll mein Firebase se
-  // fresh lastMod compare ho aur eAcademics ki concurrent passes miss na hon.
-  // gLocalMod sirf successful gFetchAll ke baad update hoga.
   gSetSS('ing');
   let val=Array.isArray(GS[k])&&GS[k].length===0?{__empty:true}:GS[k];
   try{
-    if(k==='passes'){
-      // gPunchOut ab /gateout/ node use karta hai — yahan pass kabhi nahi aayega
-      // Buses ya doosre keys ke liye normal PATCH
-      await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lastMod:GS.lastMod})});
-    } else {
-      await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
-    }
+    await fetch(`${gCfg.url}/${gCfg.code}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[k]:val,lastMod:GS.lastMod})});
     gSetSS('ok');
-    // Push ke baad turant ek fresh fetch — concurrent passes pick up ho jaati hain
-    setTimeout(gFetchAll,800);
   }catch{gSetSS('err');}
 }
 function gSetSS(st){
@@ -3562,44 +3393,150 @@ function gSetSS(st){
   t.textContent=msgs[st]||'';
   if(st==='ok')ti.textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
 }
-function gStartSync(){gSetSS('ing');gFetchAll();if(gSyncIv)clearInterval(gSyncIv);gSyncIv=setInterval(gFetchAll,gSyncIntervalSec*1000);gStartGateOutPoller();}
+// ═══ FIREBASE — REAL-TIME SYNC (EventSource-based, same design as Reception) ═══
+// No more lastMod/_ts polling anywhere below. Two live streams mirror Firebase
+// the moment anything changes:
+//   • /passes  → gStartPassesStream()  (new gatepasses appear instantly)
+//   • /gateout → gStartGateoutStream() (gate-out from either Gate device appears instantly)
+// Buses & students change rarely, so they're just fetched once per connect.
+let _gPassesById={}, _gPassesES=null, _gGateoutES=null;
 
-// ── Fast GateOut Poller ──────────────────────────────────────────────────────
-// Sirf /gateout/ node ko har 3s pe check karo — full fetch se zyada fast
-// Doosre Gate device ka gateOut isi se turant dikhega bina pura cycle wait kiye
-let _goPollerIv=null, _goLastKnown={};
-function gStartGateOutPoller(){
-  if(_goPollerIv)clearInterval(_goPollerIv);
-  _goPollerIv=setInterval(gPollGateOut, 3000);
+function _gApplyRTPatch(obj,path,data){
+  if(path==='/'){
+    Object.keys(obj).forEach(k=>delete obj[k]);
+    if(data&&typeof data==='object')Object.assign(obj,data);
+    return;
+  }
+  const parts=path.split('/').filter(Boolean);
+  let cur=obj;
+  for(let i=0;i<parts.length-1;i++){if(!cur[parts[i]]||typeof cur[parts[i]]!=='object')cur[parts[i]]={};cur=cur[parts[i]];}
+  const lastKey=parts[parts.length-1];
+  if(data===null)delete cur[lastKey];else cur[lastKey]=data;
 }
-async function gPollGateOut(){
+
+function gStartSync(){
+  if(!gCfg.url||!gCfg.code){gSetSS('off');return;}
+  gSetSS('ing');
+  gStartPassesStream();
+  gStartGateoutStream();
+  gRefreshBusesAndStudents();
+}
+
+function gStartPassesStream(){
+  if(!gCfg.url||!gCfg.code)return;
+  if(_gPassesES)_gPassesES.close();
+  _gPassesById={};
+  _gPassesES=new EventSource(`${gCfg.url}/${gCfg.code}/passes.json`);
+  const _onEvt=ev=>{
+    try{
+      const {path,data}=JSON.parse(ev.data);
+      _gApplyRTPatch(_gPassesById,path,data);
+      const today=gTodayStr();
+      const fbIdsToday=new Set();
+      Object.keys(_gPassesById).forEach(id=>{
+        const p=_gPassesById[id];
+        if(!p||typeof p!=='object'||p.date!==today)return;
+        fbIdsToday.add(id);
+        const full={...p,id};
+        if(full._hasPhoto&&!full.pickerPhoto){
+          const cached=localStorage.getItem('gp_photo_'+id);
+          if(cached)full.pickerPhoto=cached;
+        }
+        const idx=GS.passes.findIndex(x=>x.id===id);
+        if(idx>=0) GS.passes[idx]={...GS.passes[idx],...full};
+        else GS.passes.push(full);
+      });
+      GS.passes=GS.passes.filter(p=>p.date!==today||fbIdsToday.has(p.id));
+      gSaveLocal();gRenderPasses();gUpdBadge();
+      if(document.getElementById('g-set-ct')?.style.display!=='none')gRenderBuses();
+      if(typeof homeUpdateBusTally==='function')homeUpdateBusTally();
+      if(typeof btSyncAndRender==='function')btSyncAndRender();
+      gSetSS('ok');
+      gFetchMissingPhotos();
+    }catch(e){}
+  };
+  _gPassesES.addEventListener('put',_onEvt);
+  _gPassesES.addEventListener('patch',_onEvt);
+  _gPassesES.onerror=()=>{gSetSS('err');}; // EventSource auto-retries the connection on its own
+}
+
+function gStartGateoutStream(){
+  if(!gCfg.url||!gCfg.code)return;
+  if(_gGateoutES)_gGateoutES.close();
+  _gGateoutES=new EventSource(`${gCfg.url}/${gCfg.code}/gateout.json`);
+  const _applyGateOut=(id,rec)=>{
+    if(!id||!rec||!rec.gateOutTime)return;
+    const p=GS.passes.find(x=>x.id===id);
+    if(p&&!p.gateOutTime){
+      p.gateOutTime=rec.gateOutTime;if(rec.busNumber)p.busNumber=rec.busNumber;if(rec._ts)p._ts=rec._ts;
+      gSaveLocal();gRenderPasses();
+    }
+  };
+  const _onEvt=ev=>{
+    try{
+      const {path,data}=JSON.parse(ev.data);
+      if(path==='/'){if(data&&typeof data==='object')Object.entries(data).forEach(([id,rec])=>_applyGateOut(id,rec));}
+      else{const id=path.split('/').filter(Boolean)[0];if(id)_applyGateOut(id,data);}
+    }catch(e){}
+  };
+  _gGateoutES.addEventListener('put',_onEvt);
+  _gGateoutES.addEventListener('patch',_onEvt);
+  _gGateoutES.onerror=()=>{};
+}
+
+// Buses & students are low-churn — one fetch per (re)connect is enough, no stream needed.
+async function gRefreshBusesAndStudents(){
   if(!gCfg.url||!gCfg.code)return;
   try{
-    const r=await fetch(`${gCfg.url}/${gCfg.code}/gateout.json`);
-    if(!r.ok)return;
-    const goData=await r.json();
-    if(!goData||typeof goData!=='object')return;
-    let changed=false;
-    Object.entries(goData).forEach(([pid,rec])=>{
-      if(!rec||!rec.gateOutTime)return;
-      // Naya gateOut jo pehle nahi tha
-      if(_goLastKnown[pid]===rec.gateOutTime)return;
-      _goLastKnown[pid]=rec.gateOutTime;
-      const p=GS.passes.find(x=>x.id===pid);
-      if(p&&!p.gateOutTime){
-        p.gateOutTime=rec.gateOutTime;
-        if(rec.busNumber)p.busNumber=rec.busNumber;
-        if(rec._ts)p._ts=rec._ts;
-        changed=true;
-      }
-    });
-    if(changed){gSaveLocal();gRenderPasses();}
+    const [bR,sR]=await Promise.all([
+      fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
+      fetch(`${gCfg.url}/${gCfg.code}/students.json`)
+    ]);
+    if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
+    if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
+    gSaveLocal();
+    if(document.getElementById('g-set-ct')?.style.display!=='none')gRenderBuses();
   }catch(e){}
 }
-// Tab foreground mein aane par sirf gFetchAll — gLocalMod reset mat karo
-// lastMod comparison khud handle karega ki full/incremental chahiye ya kuch nahi
+
+// Fetch any still-missing pickup photos from /photos/ (kept off the main pass
+// record to save bandwidth — set by the index app after upload).
+function gFetchMissingPhotos(){
+  if(!gCfg.url||!gCfg.code)return;
+  const today=gTodayStr();
+  const yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  GS.passes
+    .filter(p=>p._hasPhoto&&!p.pickerPhoto&&(p.date===today||p.date===yest))
+    .slice(0,10)
+    .forEach(async p=>{
+      try{
+        const r=await fetch(`${gCfg.url}/${gCfg.code}/photos/${p.id}.json`);
+        if(!r.ok)return;
+        const ph=await r.json();
+        if(ph&&typeof ph==='string'&&ph.length>10){
+          p.pickerPhoto=ph;
+          try{localStorage.setItem('gp_photo_'+p.id,ph);}catch(e){}
+          gRenderPasses();
+        }
+      }catch(e){}
+    });
+}
+
+// Manual "refresh" (↻ button / bus-list refresh button) — reconnects both
+// streams fresh and re-pulls buses/students, without any polling in between.
+async function gManualRefresh(){
+  if(!gCfg.url||!gCfg.code)return;
+  gStartPassesStream();
+  gStartGateoutStream();
+  await gRefreshBusesAndStudents();
+}
+
+// Mobile browsers can silently suspend open EventSources in a backgrounded tab —
+// restart both streams when the app comes back to the foreground.
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&gCfg.url&&gCfg.code)gFetchAll();
+  if(document.visibilityState!=='visible'||!gCfg.url||!gCfg.code)return;
+  if(!_gPassesES||_gPassesES.readyState===2)gStartPassesStream();
+  if(!_gGateoutES||_gGateoutES.readyState===2)gStartGateoutStream();
 });
 function gTodayStr(){
   // IST (Asia/Kolkata) mein aaj ki date — UTC se galat date na aaye
@@ -4021,7 +3958,7 @@ async function gPunchOut(id){
   const p=GS.passes.find(x=>x.id===id);if(!p||p.gateOutTime)return;
   const busSel=document.getElementById('gbus-upd-'+id);
   if(busSel&&busSel.value&&busSel.value!==p.busNumber)p.busNumber=busSel.value;
-  p.gateOutTime=gNowT();p._ts=Date.now();if(p._ts>gSyncTs)gSyncTs=p._ts;
+  p.gateOutTime=gNowT();p._ts=Date.now();
   // Sirf /gateout/ node pe likhte hain — full passes array touch nahi karte
   // Index app fetchAll mein yeh padhega aur merge karega
   if(gCfg.url&&gCfg.code){
@@ -4265,8 +4202,9 @@ function gImportCfg(){
 function gDisconnect(){
   if(!confirm('Disconnect Firebase?'))return;
   localStorage.removeItem('gp_url');localStorage.removeItem('gp_code');
-  localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');
-  gCfg={url:'',code:''};gLocalMod=0;gSyncTs=0;if(gSyncIv)clearInterval(gSyncIv);
+  gCfg={url:'',code:''};
+  if(_gPassesES){_gPassesES.close();_gPassesES=null;}
+  if(_gGateoutES){_gGateoutES.close();_gGateoutES=null;}
   gSetSS('off');gLoadCfgF();gToast('✕ Disconnected','inf');
 }
 function gCfgSt(m,c){const el=document.getElementById('g-cfg-status');el.textContent=m;el.style.color=c;}
@@ -4307,14 +4245,16 @@ async function gTestTelegram(){
   }catch(e){ if(st) st.textContent='❌ Network error'; }
 }
 
+// Legacy "sync interval" setting — kept only so the old Settings UI (if still
+// wired to it) doesn't error. Sync is now real-time via EventSource streams
+// (gStartPassesStream/gStartGateoutStream), so there's no interval to apply.
 let gSyncIntervalSec = parseInt(localStorage.getItem('gp_sync_sec')||'5',10);
 function gSetSyncInterval(sec){
   sec=Math.max(2,Math.min(300,parseInt(sec)||5));
   gSyncIntervalSec=sec;
   localStorage.setItem('gp_sync_sec',sec);
-  if(gSyncIv){clearInterval(gSyncIv);gSyncIv=setInterval(gFetchAll,sec*1000);}
   gUpdateSyncUI();
-  gToast(`🔄 Sync set to ${sec}s`,'ok');
+  gToast(`🔄 Sync is real-time now — this setting no longer applies`,'ok');
 }
 function gApplyCustomInterval(){
   const v=document.getElementById('g-cfg-interval')?.value;
@@ -4358,9 +4298,10 @@ function gClearBusTally(){
 }
 function gClearGatepass(){
   if(!confirm('Clear cached GatePass data from this browser? Firebase is not affected.'))return;
-  localStorage.removeItem('gp_local');localStorage.removeItem('gp_local_mod');localStorage.removeItem('gp_sync_ts');
-  gLocalMod=0;gSyncTs=0;GS.students=[];GS.passes=[];GS.buses=[];
+  localStorage.removeItem('gp_local');
+  GS.students=[];GS.passes=[];GS.buses=[];
   gRenderPasses();gRenderBuses();
+  if(gCfg.url&&gCfg.code)gManualRefresh();
   gToast('🚪 GatePass cache cleared','inf');
 }
 function gClearAll(){
@@ -7569,14 +7510,6 @@ function arrUpdateHomeStat(){
   if(statEl) statEl.textContent = a>0?`${a} arrived today`:'— arrived today';
 }
 
-// Re-init arrival when gate data syncs (students may have changed)
-const _origGFetch = window.gFetchAll;
-window.addEventListener('load', ()=>{
-  if(typeof gFetchAll==='function'){
-    const _orig=gFetchAll;
-    window.gFetchAll_orig=_orig;
-  }
-});
 </script>
 </body>
 </html>
@@ -7799,7 +7732,7 @@ function btInit(){
   btRender();
 }
 
-// ── Called after every gFetchAll to keep bus list in sync ──
+// ── Called whenever the live passes stream updates, to keep bus list in sync ──
 function btSyncAndRender(){
   if(typeof GS === 'undefined' || !GS.buses) return;
   const validBuses = GS.buses.filter(b=>b&&String(b).trim());
