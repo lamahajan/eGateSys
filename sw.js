@@ -1,6 +1,6 @@
 const CACHE_NAME = "egatesys-cache-v1";
 const APP_SHELL = [
-  "./Gate.html",
+  "./index.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
@@ -35,7 +35,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match("./Gate.html")))
+        .catch(() => caches.match(req).then((r) => r || caches.match("./index.html")))
     );
     return;
   }
