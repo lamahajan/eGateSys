@@ -2,7 +2,7 @@
   "name": "Lotus eGateSys",
   "short_name": "eGateSys",
   "description": "Gate Pass, Attendance & Visitor Register",
-  "start_url": "./Gate.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
