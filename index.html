@@ -1421,6 +1421,36 @@ body.dark {
   font-weight:700; text-align:center; outline:none;
 }
 .bt-exp-inp:focus { border-color:var(--bt-acc); color:var(--txt); }
+/* Voice mic button (shift modal) */
+.bt-mic-btn {
+  width:22px; height:22px; min-width:22px; border-radius:50%;
+  border:1.5px solid var(--bt-acc-b, var(--bdr2)); background:var(--card);
+  color:var(--bt-acc, var(--sub)); font-size:11px; line-height:1; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; padding:0;
+  transition:all .15s;
+}
+.bt-mic-btn:hover { background:var(--bt-acc-l); }
+.bt-mic-btn.bt-mic-listening,
+.bt-mic-fab.bt-mic-listening {
+  background:#dc2626; border-color:#dc2626; color:#fff;
+  animation: btMicPulse 1s infinite;
+}
+@keyframes btMicPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.5); }
+  50% { box-shadow:0 0 0 8px rgba(220,38,38,0); }
+}
+
+/* Floating common voice button — bottom-left */
+.bt-mic-fab {
+  position:fixed; right:16px; bottom:88px; z-index:250;
+  width:52px; height:52px; border-radius:50%;
+  background:var(--bt-acc, #2563eb); color:#fff; border:none;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.28); cursor:pointer;
+}
+.bt-mic-fab:active { transform:scale(.94); }
+@media (min-width:769px) { .bt-mic-fab { bottom:24px; } }
+
 /* Shift button in evening */
 .bt-shift-btn {
   width:100%; margin-top:6px; padding:5px 8px; border-radius:7px;
@@ -1836,6 +1866,7 @@ body.dark {
           </div>
           <div id="bt-morn-banner" style="display:none;margin:12px 14px 0;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--mono);text-align:center;border:1.5px solid var(--bt-grn);background:var(--bt-grn-l);color:var(--bt-grn)"></div>
           <button class="bt-save-btn" onclick="btManualSave()">💾 <span data-i18n="btn_save_morning">Save Morning Data</span></button>
+          <button type="button" class="bt-mic-fab" onclick="btVoiceFloating(this,'morn')" title="Voice input"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         </div>
 
         <!-- ── Evening Bus Tally tab (inside GatePass) ── -->
@@ -1844,6 +1875,7 @@ body.dark {
           <div id="bt-evening-list"></div>
           <div id="bt-match-banner" style="display:none;margin:12px 14px 0;padding:10px 14px;border-radius:10px;border:1.5px solid;"></div>
           <button class="bt-save-btn" onclick="btManualSave()">💾 <span data-i18n="btn_save_evening">Save Evening Data</span></button>
+          <button type="button" class="bt-mic-fab" onclick="btVoiceFloating(this,'eve')" title="Voice input"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         </div>
 
         <!-- Settings tab -->
@@ -1953,6 +1985,34 @@ body.dark {
                     <button type="button" onclick="gImportCfg()"
                       style="flex:1;padding:8px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">⬆️ Import</button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Voice Input ── -->
+            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
+              <button type="button" onclick="gToggle('g-voice-body','g-voice-arrow')"
+                style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:none;border:none;cursor:pointer;text-align:left">
+                <div style="width:32px;height:32px;border-radius:9px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🎤</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:800;color:var(--text);font-family:var(--sans)">Voice Input</div>
+                  <div id="g-voice-status" style="font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:1px">Recognition language: HI</div>
+                </div>
+                <span id="g-voice-arrow" style="font-size:11px;color:var(--sub);transition:transform .2s;transform:rotate(90deg);flex-shrink:0">▶</span>
+              </button>
+              <div id="g-voice-body" style="padding:0 14px 14px;border-top:1px solid var(--border)">
+                <div style="height:10px"></div>
+                <div style="font-size:11px;color:var(--sub);font-family:var(--sans);line-height:1.5;margin-bottom:10px">
+                  Language used for the Bus Tally mic (independent of the app's display language). Hindi generally recognizes mixed Hindi/Punjabi/English speech best.
+                </div>
+                <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:7px;font-family:var(--sans)">RECOGNITION LANGUAGE</label>
+                <div style="display:flex;gap:6px" id="g-voice-lang-btns">
+                  <button type="button" class="g-voice-lang-opt" data-lang="hi" onclick="gSetVoiceLang('hi')"
+                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🇮🇳 Hindi</button>
+                  <button type="button" class="g-voice-lang-opt" data-lang="en" onclick="gSetVoiceLang('en')"
+                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🇬🇧 English</button>
+                  <button type="button" class="g-voice-lang-opt" data-lang="pa" onclick="gSetVoiceLang('pa')"
+                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🌾 Punjabi</button>
                 </div>
               </div>
             </div>
@@ -7379,6 +7439,278 @@ function btGoTab(tab, btn){
   _btActiveTab = tab;
 }
 
+// ══════════════════════════════════════════════════════════
+// ── Voice input (English / Hindi / Punjabi / mixed) ──
+// One floating mic button per tab. Staff can say one bus or several
+// in a single sentence, e.g. "bus 3 mein 25 aaye, bus 5 mein 15 aaye"
+// or "12 number de 3 bacche aap aaye" (parent drop). The app also
+// speaks the result back (2-way) so staff don't need to look at the screen.
+// ══════════════════════════════════════════════════════════
+
+// SVG icons (replace emoji)
+const BT_MIC_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+const BT_MIC_ICON_SMALL = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+const BT_MIC_ICON_LISTENING = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+
+// Words/phrases that mean "parent drop" (self-dropped, not by bus)
+const BT_PARENT_RX = /\b(parent|पेरेंट|अभिभावक|aap|आप|khud|खुद|apne\s*aap|अपने\s*आप|self\s*drop|खुद\s*आए)\b/i;
+
+// Voice recognition language — deliberately independent from the app's
+// display language (EN/HI/PA toggle). hi-IN gives the best real-world
+// accuracy for Hindi/Punjabi-accented mixed speech, so it's the default
+// regardless of what the UI is showing. Configurable from
+// Settings → Voice Input.
+let btVoiceLangCode = localStorage.getItem('bt_voice_lang') || 'hi';
+const BT_VOICE_LANG_MAP = { en:'en-IN', hi:'hi-IN', pa:'pa-IN' };
+
+function gRenderVoiceLangUI(){
+  document.querySelectorAll('.g-voice-lang-opt').forEach(b=>{
+    const active = b.dataset.lang === btVoiceLangCode;
+    b.style.background    = active ? 'var(--green)' : 'var(--bg2)';
+    b.style.color         = active ? '#fff' : 'var(--text)';
+    b.style.borderColor   = active ? 'var(--green)' : 'var(--border)';
+  });
+  const status = document.getElementById('g-voice-status');
+  if(status) status.textContent = 'Recognition language: ' + btVoiceLangCode.toUpperCase();
+}
+
+function gSetVoiceLang(lang){
+  btVoiceLangCode = lang;
+  localStorage.setItem('bt_voice_lang', lang);
+  gRenderVoiceLangUI();
+  btToast(`🎤 Voice language set to ${lang.toUpperCase()}`, 'ok');
+}
+
+function gVoiceLangInit(){ gRenderVoiceLangUI(); }
+if(document.readyState==='interactive' || document.readyState==='complete'){ gVoiceLangInit(); }
+else{ document.addEventListener('DOMContentLoaded', gVoiceLangInit); }
+
+// ── TTS voice selection ──
+// Browsers ship several voices per language; the default picked can be
+// a flat/robotic one. Cache the voice list and actively choose a proper
+// Indian voice for the target language instead of leaving it to chance.
+let btCachedVoices = [];
+function btLoadVoices(){ btCachedVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+if('speechSynthesis' in window){
+  btLoadVoices();
+  window.speechSynthesis.onvoiceschanged = btLoadVoices;
+}
+
+function btGetBestVoice(langCode){
+  const target = BT_VOICE_LANG_MAP[langCode] || 'hi-IN';
+  const voices = btCachedVoices.length ? btCachedVoices : (window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
+  if(!voices.length) return null;
+  // Prefer a voice explicitly flagged as Indian/Hindi in its name
+  // (e.g. "Google हिन्दी", "Microsoft Swara Online (Natural) - Hindi (India)")
+  let match = voices.find(v => v.lang === target && /india|हिन्दी|hindi|swara|kalpana|heera|lekha/i.test(v.name));
+  if(!match) match = voices.find(v => v.lang === target);
+  if(!match) match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(target.slice(0,2).toLowerCase()));
+  return match || null;
+}
+
+// Speak text back to staff (2-way voice)
+function btSpeak(text){
+  if(!text || !('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const target = BT_VOICE_LANG_MAP[btVoiceLangCode] || 'hi-IN';
+    u.lang = target;
+    const voice = btGetBestVoice(btVoiceLangCode);
+    if(voice) u.voice = voice;
+    u.rate = 0.95;
+    u.pitch = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+function btVoiceFill(btn){ // still used by the shift-modal mic button
+  btVoiceListen(btn, (transcript)=>{
+    const num = btParseSpokenNumber(transcript);
+    if(num===null){ btToast(`🎤 Heard "${transcript.trim()}" — no number found, try again`,'err'); btSpeak('Number nahi mila, dobara boliye'); return; }
+    const targetId = btn.dataset.target;
+    const input = document.getElementById(targetId);
+    if(input){
+      input.value = num;
+      input.dispatchEvent(new Event('input',  {bubbles:true}));
+      input.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+    btToast(`🎤 "${transcript.trim()}" → ${num}`, 'ok');
+    btSpeak(String(num));
+  });
+}
+
+// Common floating mic — identifies one or more buses + field + count
+// from a single sentence, applies all of them, then speaks a summary.
+function btVoiceFloating(btn, tab){
+  btVoiceListen(btn, (transcript)=>{
+    const entries = btParseVoiceEntries(transcript);
+    if(!entries.length){
+      btToast(`🎤 Heard "${transcript.trim()}" — couldn't understand, try again`, 'err');
+      btSpeak('Samajh nahi aaya, dobara boliye');
+      return;
+    }
+    const spokenParts = [];
+    const toastParts  = [];
+    entries.forEach(({idx, count, isParent})=>{
+      const bus = BT_DATA.buses[idx];
+      const isSelfBus = String(bus.name||'').trim().toLowerCase()==='self';
+      let input, fieldLabel, spokenField;
+      if(tab==='morn'){
+        if(isSelfBus || isParent){ input = document.getElementById(`btmc-par-${idx}`); fieldLabel='Parent Drop'; spokenField='parent se'; }
+        else { input = document.getElementById(`btmc-inp-${idx}`); fieldLabel='Arrived'; spokenField='aaye'; }
+      } else {
+        input = document.getElementById(`btec-inp-${idx}`); fieldLabel='On Bus'; spokenField='bus mein';
+      }
+      if(!input) return;
+      input.value = count;
+      input.dispatchEvent(new Event('input',  {bubbles:true}));
+      input.dispatchEvent(new Event('change', {bubbles:true}));
+      toastParts.push(`${btE(bus.name)} → ${fieldLabel}: ${count}`);
+      spokenParts.push(`bus ${bus.name} mein ${count} ${spokenField}`);
+    });
+    if(!toastParts.length){
+      btToast(`🎤 Heard "${transcript.trim()}" — couldn't match to a bus`, 'err');
+      btSpeak('Bus samajh nahi aayi, dobara boliye');
+      return;
+    }
+    btToast(`🎤 ${toastParts.join(' | ')}`, 'ok');
+    btSpeak(spokenParts.join('. '));
+  });
+}
+
+// Finds every "bus <number>" style reference in a sentence (handles
+// "bus 3", "बस 3", "3 number", "12 number de", "no 5", "नंबर 7",
+// and the common shorthand "18 mein 4 aaye" — a number directly
+// followed by mein/me/में implies a bus reference by context) and
+// returns them in the order they were spoken, with their position
+// in the text so the counts for each can be read from what follows it.
+function btFindBusMentions(text){
+  const rx = /(?:bus|बस|bas)\s*(?:no\.?|number|नंबर)?\s*(\d+)|(\d+)\s*(?:number|no\.?|नंबर)|(\d+)\s*(?:mein|me|में)\b/gi;
+  const found = [];
+  let m;
+  while((m = rx.exec(text)) !== null){
+    const digit = m[1] || m[2] || m[3];
+    if(!digit) continue;
+    const idx = BT_DATA.buses.findIndex(b=>{
+      const n = String(b.name||'').trim().toLowerCase();
+      return n===digit || n===('bus '+digit);
+    });
+    if(idx>=0) found.push({ idx, start:m.index, end:m.index+m[0].length });
+  }
+  if(found.length) return found;
+
+  // Fallback: no digit-style bus reference found — try matching a
+  // named bus (e.g. "Self") as a whole word, once.
+  const lower = text.toLowerCase();
+  let best=-1, bestLen=0, bestStart=-1;
+  BT_DATA.buses.forEach((b,i)=>{
+    const name = String(b.name||'').trim().toLowerCase();
+    if(name && lower.includes(name) && name.length>bestLen){
+      best=i; bestLen=name.length; bestStart=lower.indexOf(name);
+    }
+  });
+  if(best>=0) found.push({ idx:best, start:bestStart, end:bestStart+bestLen });
+  return found;
+}
+
+// Splits one sentence into per-bus entries: {idx, count, isParent}.
+// Each bus can carry TWO numbers — an "arrived" count and a "khud/
+// parent" count, e.g. "12 number mein 10 bacche aaye 2 khud aaye" →
+// arrived:10, parent:2. Every number found in a bus's segment is
+// checked against the text right after it (up to the next number)
+// for a parent keyword, so several buses AND both counts per bus
+// can be said in one sentence.
+function btParseVoiceEntries(text){
+  const mentions = btFindBusMentions(text);
+  if(!mentions.length) return [];
+  const entries = [];
+  for(let i=0; i<mentions.length; i++){
+    const seg = mentions[i];
+    const nextStart = i+1 < mentions.length ? mentions[i+1].start : text.length;
+    const payload = text.slice(seg.end, nextStart);
+
+    const numRx = /\d+/g;
+    const nums = [];
+    let nm;
+    while((nm = numRx.exec(payload)) !== null){
+      nums.push({ val: parseInt(nm[0], 10), start: nm.index, end: nm.index + nm[0].length });
+    }
+
+    if(!nums.length){
+      // No digits in this bus's segment — fall back to word-number parsing (single value only)
+      const c = btParseSpokenNumber(payload);
+      if(c !== null) entries.push({ idx:seg.idx, count:c, isParent: BT_PARENT_RX.test(payload) });
+      continue;
+    }
+    for(let j=0; j<nums.length; j++){
+      const n = nums[j];
+      const ctxEnd = j+1 < nums.length ? nums[j+1].start : payload.length;
+      const context = payload.slice(n.end, ctxEnd);
+      const isParent = BT_PARENT_RX.test(context);
+      entries.push({ idx:seg.idx, count:n.val, isParent });
+    }
+  }
+  return entries;
+}
+
+function btVoiceListen(btn, onTranscript){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ btToast('Voice not supported in this browser — use Chrome','err'); return; }
+  if(btn.classList.contains('bt-mic-listening')) return; // already listening
+
+  const rec = new SR();
+  const langMap = BT_VOICE_LANG_MAP;
+  rec.lang = langMap[btVoiceLangCode] || 'hi-IN'; // independent of UI language — hi-IN handles Hindi/Punjabi/English mixed speech best
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  const origHtml = btn.innerHTML;
+  btn.classList.add('bt-mic-listening');
+  btn.innerHTML = BT_MIC_ICON_LISTENING;
+  const finish = ()=>{ btn.classList.remove('bt-mic-listening'); btn.innerHTML = origHtml; };
+
+  rec.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript || '';
+    finish();
+    onTranscript(transcript);
+  };
+  rec.onerror = ()=>{ finish(); btToast('Could not hear — try again', 'err'); };
+  rec.onend = finish;
+  try{ rec.start(); }catch(err){ finish(); }
+}
+
+// Extract a count from spoken text. Digits (what Chrome's hi-IN/pa-IN/en-IN
+// engines usually return for numbers) are tried first; falls back to common
+// English number words, then a small Hindi number-word table.
+function btParseSpokenNumber(text){
+  if(!text) return null;
+  const digitMatch = text.match(/\d+/);
+  if(digitMatch) return parseInt(digitMatch[0], 10);
+
+  const words = text.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean);
+  const ones = {zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
+    eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19};
+  const tens = {twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+  let total = null;
+  for(const w of words){
+    if(ones[w]!==undefined) total = (total||0) + ones[w];
+    else if(tens[w]!==undefined) total = (total||0) + tens[w];
+    else if(w==='hundred') total = (total||0) * 100 || 100;
+  }
+  if(total !== null) return total;
+
+  const hindiMap = {
+    'शून्य':0,'एक':1,'दो':2,'तीन':3,'चार':4,'पांच':5,'पाँच':5,'छह':6,'छः':6,'सात':7,'आठ':8,'नौ':9,'दस':10,
+    'ग्यारह':11,'बारह':12,'तेरह':13,'चौदह':14,'पंद्रह':15,'सोलह':16,'सत्रह':17,'अठारह':18,'उन्नीस':19,
+    'बीस':20,'तीस':30,'चालीस':40,'पचास':50,'साठ':60,'सत्तर':70,'अस्सी':80,'नब्बे':90,'सौ':100
+  };
+  for(const [k,v] of Object.entries(hindiMap)){
+    if(text.includes(k)) return v;
+  }
+  return null;
+}
+
 // ── State ──
 // BT_DATA = { buses: [{name, morning, expected, evening, eveExpected, eveShifted}],
 //             parent: {morning, evening}, date }
@@ -7658,7 +7990,7 @@ function btRenderMorning(){
       <div class="bt-mini-grid-self">
         <div class="bt-mini-card c-total">
           <div class="bt-mini-label">${_t('bt_parent_drop')}</div>
-          <input class="bt-mini-num" type="number" min="0" value="${parMorn||''}" placeholder="0"
+          <input class="bt-mini-num" id="btmc-par-${idx}" type="number" min="0" value="${parMorn||''}" placeholder="0"
             inputmode="numeric" pattern="[0-9]*"
             oninput="btSetBusParentMorn(${idx},this.value)"
             onchange="btSetBusParentMorn(${idx},this.value)">
@@ -7667,14 +7999,14 @@ function btRenderMorning(){
       <div class="bt-mini-grid">
         <div class="bt-mini-card">
           <div class="bt-mini-label">${_t('bt_bus_arrived')}</div>
-          <input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
+          <input class="bt-mini-num" id="btmc-inp-${idx}" type="number" min="0" value="${count||''}" placeholder="0"
             inputmode="numeric" pattern="[0-9]*"
             oninput="btSetBusMorn(${idx},this.value)"
             onchange="btSetBusMorn(${idx},this.value)">
         </div>
         <div class="bt-mini-card">
           <div class="bt-mini-label">${_t('bt_parent_drop')}</div>
-          <input class="bt-mini-num" type="number" min="0" value="${parMorn||''}" placeholder="0"
+          <input class="bt-mini-num" id="btmc-par-${idx}" type="number" min="0" value="${parMorn||''}" placeholder="0"
             inputmode="numeric" pattern="[0-9]*"
             oninput="btSetBusParentMorn(${idx},this.value)"
             onchange="btSetBusParentMorn(${idx},this.value)">
@@ -8002,7 +8334,7 @@ function btOpenShift(idx){
       </select>
     </div>
     <div style="margin-bottom:14px">
-      <label style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}</label>
+      <label style="display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}<button type="button" class="bt-mic-btn" data-target="bt-shift-count" onclick="btVoiceFill(this)" title="Voice">${BT_MIC_ICON_SMALL}</button></label>
       <input id="bt-shift-count" type="number" min="1" value="1"
         inputmode="numeric" pattern="[0-9]*"
         style="width:100%;margin-top:5px;text-align:center;font-size:22px;font-weight:800;font-family:var(--mono);padding:8px;border-radius:9px;border:1.5px solid var(--bdr2);background:var(--card);color:var(--txt);outline:none">
