@@ -1486,6 +1486,7 @@ body.dark {
 .bt-mini-grid-5 .bt-mini-disp { font-size: 16px; }
 .bt-mini-grid-5 .bt-mini-card.c-remain-ok  .bt-mini-disp { font-size: 14px; }
 .bt-mini-grid-5 .bt-mini-card.c-remain-bad .bt-mini-disp { font-size: 14px; }
+
 .bt-mini-grid-4 {
   display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-top: 4px;
 }
@@ -5929,6 +5930,7 @@ const _T = {
     bt_total:         '📊 Total',
     bt_expected:      '🌅 Expected',
     bt_on_bus:        '🚌 On Bus',
+    bt_self_lbl:      '🚗 Self',
     bt_gatepass:      '🚪 GatePass',
     bt_shifted:       '🔄 Shifted',
     bt_remaining:     '📋 Remaining',
@@ -6107,6 +6109,7 @@ const _T = {
     bt_total:         '📊 कुल',
     bt_expected:      '🌅 अपेक्षित',
     bt_on_bus:        '🚌 बस में',
+    bt_self_lbl:      '🚗 सेल्फ',
     bt_gatepass:      '🚪 गेट पास',
     bt_shifted:       '🔄 शिफ्ट',
     bt_remaining:     '📋 बाकी',
@@ -6283,6 +6286,7 @@ const _T = {
     bt_total:         '📊 ਕੁੱਲ',
     bt_expected:      '🌅 ਉਮੀਦਵਾਰ',
     bt_on_bus:        '🚌 ਬੱਸ ਵਿੱਚ',
+    bt_self_lbl:      '🚗 ਸੈਲਫ',
     bt_gatepass:      '🚪 ਗੇਟ ਪਾਸ',
     bt_shifted:       '🔄 ਬਦਲੀ',
     bt_remaining:     '📋 ਬਾਕੀ',
@@ -7453,7 +7457,7 @@ const BT_MIC_ICON_SMALL = '<svg viewBox="0 0 24 24" width="13" height="13" fill=
 const BT_MIC_ICON_LISTENING = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
 
 // Words/phrases that mean "parent drop" (self-dropped, not by bus)
-const BT_PARENT_RX = /\b(parent|पेरेंट|अभिभावक|aap|आप|khud|खुद|apne\s*aap|अपने\s*आप|self\s*drop|खुद\s*आए)\b/i;
+const BT_PARENT_RX = /\b(parents?|पेरेंट्?स?|अभिभावक|aap|आप|khud|खुद|apne\s*aap|अपने\s*आप|self\s*drop|खुद\s*आए)\b/i;
 
 // Voice recognition language — deliberately independent from the app's
 // display language (EN/HI/PA toggle). hi-IN gives the best real-world
@@ -7542,8 +7546,64 @@ function btVoiceFill(btn){ // still used by the shift-modal mic button
 
 // Common floating mic — identifies one or more buses + field + count
 // from a single sentence, applies all of them, then speaks a summary.
+// Parses a full shift sentence like "3 bacche 7 se 12 mein gaye" (or
+// "bus 7 se bus 12 mein 5 shift karo") into {fromIdx, toIdx, count}.
+// Requires both an explicit "<bus> se" (from) and "<bus> mein/ko" (to)
+// to trigger — otherwise returns null so normal on-bus parsing applies.
+// Words/phrases that signal shift intent, used as a gate for the
+// fallback matching below (so ordinary counting sentences don't
+// accidentally get treated as a shift).
+const BT_SHIFT_INTENT_RX = /\b(shift|se|gaye|gye|गए|गये|bhej|भेज|transfer|move|karo)\b/i;
+
+function btParseShiftVoice(text){
+  let fromIdx=null, toIdx=null;
+  const spans=[];
+
+  const fromM = text.match(/(\d+)\s*se\b/i);
+  if(fromM){
+    const digit = fromM[1];
+    const idx = BT_DATA.buses.findIndex(b=>String(b.name||'').trim().toLowerCase()===digit);
+    if(idx>=0){ fromIdx=idx; spans.push({start:fromM.index, end:fromM.index+fromM[0].length}); }
+  }
+  const toM = text.match(/(\d+)\s*(?:mein|main|me|m|में|ko|को)\b/i);
+  if(toM){
+    const digit = toM[1];
+    const idx = BT_DATA.buses.findIndex(b=>String(b.name||'').trim().toLowerCase()===digit);
+    if(idx>=0){ toIdx=idx; spans.push({start:toM.index, end:toM.index+toM[0].length}); }
+  }
+
+  // Fallback: "se"/"mein" wording didn't match cleanly, but the sentence
+  // clearly signals a shift and mentions two distinct buses — use the
+  // order they were spoken in as from → to.
+  if((fromIdx===null || toIdx===null) && BT_SHIFT_INTENT_RX.test(text)){
+    const mentions = btFindBusMentions(text);
+    const distinct = [];
+    mentions.forEach(m=>{ if(!distinct.some(d=>d.idx===m.idx)) distinct.push(m); });
+    if(distinct.length>=2){
+      if(fromIdx===null){ fromIdx=distinct[0].idx; spans.push({start:distinct[0].start,end:distinct[0].end}); }
+      if(toIdx===null){ toIdx=distinct[1].idx; spans.push({start:distinct[1].start,end:distinct[1].end}); }
+    }
+  }
+
+  if(fromIdx===null || toIdx===null || fromIdx===toIdx) return null;
+
+  spans.sort((a,b)=>a.start-b.start);
+  let remainder = text;
+  for(let i=spans.length-1; i>=0; i--){
+    remainder = remainder.slice(0, spans[i].start) + ' ' + remainder.slice(spans[i].end);
+  }
+  const count = btParseSpokenNumber(remainder);
+  if(count===null) return null;
+  return { fromIdx, toIdx, count };
+}
+
 function btVoiceFloating(btn, tab){
   btVoiceListen(btn, (transcript)=>{
+    const shift = btParseShiftVoice(transcript);
+    if(shift){
+      btVoiceApplyShift(shift.fromIdx, shift.toIdx, shift.count);
+      return;
+    }
     const entries = btParseVoiceEntries(transcript);
     if(!entries.length){
       btToast(`🎤 Heard "${transcript.trim()}" — couldn't understand, try again`, 'err');
@@ -7586,7 +7646,7 @@ function btVoiceFloating(btn, tab){
 // returns them in the order they were spoken, with their position
 // in the text so the counts for each can be read from what follows it.
 function btFindBusMentions(text){
-  const rx = /(?:bus|बस|bas)\s*(?:no\.?|number|नंबर)?\s*(\d+)|(\d+)\s*(?:number|no\.?|नंबर)|(\d+)\s*(?:mein|me|में)\b/gi;
+  const rx = /(?:bus|बस|bas)\s*(?:no\.?|number|नंबर)?\s*(\d+)|(\d+)\s*(?:number|no\.?|नंबर)|(\d+)\s*(?:mein|main|me|m|में)\b/gi;
   const found = [];
   let m;
   while((m = rx.exec(text)) !== null){
@@ -7747,7 +7807,7 @@ function btLoad(){
   }catch(e){}
   if(!busList.length && typeof GS !== 'undefined' && GS.buses && GS.buses.length){
     busList = GS.buses.filter(b=>b&&String(b).trim())  // skip null/empty from Firebase
-      .map(b=>({name:b,morning:0,expected:0,evening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]}));
+      .map(b=>({name:b,morning:0,expected:0,parentMorning:0,evening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]}));
   }
   BT_DATA = { buses:busList, parent:{morning:0,evening:0}, date:today };
   btSave();
@@ -8052,6 +8112,7 @@ function btRenderEvening(){
     </div>`; return;
   }
   list.innerHTML = BT_DATA.buses.map((bus, idx)=>{
+    const isSelf = (bus.name||'').trim().toLowerCase() === 'self';
     const { count, expected, gpCount, gpVal, remaining } = btCalcEveRow(bus);
     const shifted = bus.eveShifted;
 
@@ -8088,11 +8149,13 @@ function btRenderEvening(){
         </div>
         <div class="bt-mini-card">
           <div class="bt-mini-label">${_t('bt_on_bus')}</div>
-          <input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
-            id="btec-inp-${idx}"
-            inputmode="numeric" pattern="[0-9]*"
-            oninput="btSetBusEve(${idx},this.value)"
-            onchange="btSetBusEve(${idx},this.value)">
+          ${isSelf
+            ? `<div class="bt-mini-disp">${_t('bt_self_lbl')}</div>`
+            : `<input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
+                id="btec-inp-${idx}"
+                inputmode="numeric" pattern="[0-9]*"
+                oninput="btSetBusEve(${idx},this.value)"
+                onchange="btSetBusEve(${idx},this.value)">`}
         </div>
         <div class="bt-mini-card c-gp">
           <div class="bt-mini-label">${_t('bt_gatepass')}</div>
@@ -8437,20 +8500,13 @@ function btDeleteShiftEntry(busIdx, type, entryIdx){
   btToast('🗑 Shift entry deleted','err');
 }
 
-function btApplyShift(fromIdx){
-  const destSel = document.getElementById('bt-shift-dest');
-  const countInp = document.getElementById('bt-shift-count');
-  const destIdx = parseInt(destSel?.value);
-  const count = parseInt(countInp?.value)||0;
-  if(isNaN(destIdx)||count<=0){ btToast('Enter valid values','err'); return; }
-
+function btApplyShiftDirect(fromIdx, destIdx, count){
   const fromBus = BT_DATA.buses[fromIdx];
   const destBus = BT_DATA.buses[destIdx];
-  const actual = count; // allow shift regardless of On Bus value
+  const actual = count;
 
   destBus.eveShifted = true;
 
-  // Track shift log for "12→17 (3)" label
   if(!fromBus.shiftTo) fromBus.shiftTo = [];
   const existFrom = fromBus.shiftTo.find(e=>e.toName===destBus.name);
   if(existFrom) existFrom.count = (existFrom.count||0) + actual;
@@ -8462,11 +8518,30 @@ function btApplyShift(fromIdx){
   else destBus.shiftFrom.push({fromName: fromBus.name, count: actual});
 
   btSave();
-  document.getElementById('bt-shift-modal').style.display='none';
-  btRenderEvening();   // only refresh evening cards
+  btRenderEvening();
   btRenderSummary(); btCheckMatch();
+  return { fromBus, destBus, actual };
+}
+
+function btApplyShift(fromIdx){
+  const destSel = document.getElementById('bt-shift-dest');
+  const countInp = document.getElementById('bt-shift-count');
+  const destIdx = parseInt(destSel?.value);
+  const count = parseInt(countInp?.value)||0;
+  if(isNaN(destIdx)||count<=0){ btToast('Enter valid values','err'); return; }
+  const { fromBus, destBus, actual } = btApplyShiftDirect(fromIdx, destIdx, count);
+  document.getElementById('bt-shift-modal').style.display='none';
   btToast(`${actual} student(s) shifted: ${btE(fromBus.name)} → ${btE(destBus.name)} ✅`,'ok');
 }
+
+// Voice-driven shift — applies directly without needing the modal open,
+// so staff can say the whole thing in one sentence: "3 bacche 7 se 12 mein gaye"
+function btVoiceApplyShift(fromIdx, destIdx, count){
+  const { fromBus, destBus, actual } = btApplyShiftDirect(fromIdx, destIdx, count);
+  btToast(`🎤 ${btE(fromBus.name)} → ${btE(destBus.name)}: ${actual} shifted`, 'ok');
+  btSpeak(`bus ${fromBus.name} se bus ${destBus.name} mein ${actual} bacche shift ho gaye`);
+}
+
 
 // ── Add / delete bus ──
 function btAddBus(){
