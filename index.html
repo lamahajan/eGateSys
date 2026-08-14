@@ -8148,14 +8148,12 @@ function btRenderEvening(){
           <div class="bt-mini-disp" id="btec-exp-${idx}">${expected > 0 ? expected : `<span class='bt-mini-disp muted'>—</span>`}</div>
         </div>
         <div class="bt-mini-card">
-          <div class="bt-mini-label">${_t('bt_on_bus')}</div>
-          ${isSelf
-            ? `<div class="bt-mini-disp">${_t('bt_self_lbl')}</div>`
-            : `<input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
-                id="btec-inp-${idx}"
-                inputmode="numeric" pattern="[0-9]*"
-                oninput="btSetBusEve(${idx},this.value)"
-                onchange="btSetBusEve(${idx},this.value)">`}
+          <div class="bt-mini-label">${isSelf ? _t('bt_self_lbl') : _t('bt_on_bus')}</div>
+          <input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
+            id="btec-inp-${idx}"
+            inputmode="numeric" pattern="[0-9]*"
+            oninput="btSetBusEve(${idx},this.value)"
+            onchange="btSetBusEve(${idx},this.value)">
         </div>
         <div class="bt-mini-card c-gp">
           <div class="bt-mini-label">${_t('bt_gatepass')}</div>
