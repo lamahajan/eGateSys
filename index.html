@@ -7802,12 +7802,12 @@ function btLoad(){
       .filter(b=>b&&b.name&&String(b.name).trim())  // skip null/empty names
       .map(b=>({
         name:b.name, morning:0, expected:b.expected||0, parentMorning:0,
-        evening:0, eveExpected:b.eveExpected||b.expected||0, eveShifted:false, shiftTo:[], shiftFrom:[]
+        evening:0, parentEvening:0, eveExpected:b.eveExpected||b.expected||0, eveShifted:false, shiftTo:[], shiftFrom:[]
       })); }
   }catch(e){}
   if(!busList.length && typeof GS !== 'undefined' && GS.buses && GS.buses.length){
     busList = GS.buses.filter(b=>b&&String(b).trim())  // skip null/empty from Firebase
-      .map(b=>({name:b,morning:0,expected:0,parentMorning:0,evening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]}));
+      .map(b=>({name:b,morning:0,expected:0,parentMorning:0,evening:0,parentEvening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]}));
   }
   BT_DATA = { buses:busList, parent:{morning:0,evening:0}, date:today };
   btSave();
@@ -7962,7 +7962,7 @@ function btInit(){
     // Add any new buses not yet in BT_DATA
     validBuses.forEach(bname=>{
       if(!BT_DATA.buses.find(b=>b.name===bname)){
-        BT_DATA.buses.push({name:bname,morning:0,expected:0,parentMorning:0,evening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]});
+        BT_DATA.buses.push({name:bname,morning:0,expected:0,parentMorning:0,evening:0,parentEvening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]});
         changed = true;
       }
     });
@@ -7987,7 +7987,7 @@ function btSyncAndRender(){
   // Add new buses
   validBuses.forEach(bname=>{
     if(!BT_DATA.buses.find(b=>b.name===bname)){
-      BT_DATA.buses.push({name:bname,morning:0,expected:0,parentMorning:0,evening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]});
+      BT_DATA.buses.push({name:bname,morning:0,expected:0,parentMorning:0,evening:0,parentEvening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]});
       changed = true;
     }
   });
@@ -8092,14 +8092,16 @@ function btRenderMorning(){
 
 function btCalcEveRow(bus){
   const count    = bus.evening||0;
+  const parEve   = bus.parentEvening||0;
+  const total    = count + parEve;
   const mornBase = (bus.morning||0) + (bus.parentMorning||0);
   const shiftOut = (bus.shiftTo  ||[]).reduce((s,e)=>s+(e.count||0),0);
   const shiftIn  = (bus.shiftFrom||[]).reduce((s,e)=>s+(e.count||0),0);
   const expected = mornBase - shiftOut + shiftIn;
   const gpCount  = btGatepassCountForBus(bus.name);
   const gpVal    = gpCount !== null ? gpCount : 0;
-  const remaining = expected > 0 ? expected - count - gpVal : null;
-  return { count, mornBase, expected, gpCount, gpVal, remaining, shiftOut, shiftIn };
+  const remaining = expected > 0 ? expected - total - gpVal : null;
+  return { count, parEve, total, mornBase, expected, gpCount, gpVal, remaining, shiftOut, shiftIn };
 }
 
 function btRenderEvening(){
@@ -8113,7 +8115,7 @@ function btRenderEvening(){
   }
   list.innerHTML = BT_DATA.buses.map((bus, idx)=>{
     const isSelf = (bus.name||'').trim().toLowerCase() === 'self';
-    const { count, expected, gpCount, gpVal, remaining } = btCalcEveRow(bus);
+    const { count, parEve, total, expected, gpCount, gpVal, remaining } = btCalcEveRow(bus);
     const shifted = bus.eveShifted;
 
     const shiftToE = bus.shiftTo   || [];
@@ -8149,11 +8151,12 @@ function btRenderEvening(){
         </div>
         <div class="bt-mini-card">
           <div class="bt-mini-label">${isSelf ? _t('bt_self_lbl') : _t('bt_on_bus')}</div>
-          <input class="bt-mini-num" type="number" min="0" value="${count||''}" placeholder="0"
+          <input class="bt-mini-num" type="number" min="0" value="${total||''}" placeholder="0"
             id="btec-inp-${idx}"
             inputmode="numeric" pattern="[0-9]*"
             oninput="btSetBusEve(${idx},this.value)"
             onchange="btSetBusEve(${idx},this.value)">
+          ${isSelf && parEve>0 ? `<div style="font-size:9px;color:var(--mut);margin-top:2px;text-align:center" title="Auto-filled from gate exit scans">🔄 ${parEve} auto from exit scans</div>` : ''}
         </div>
         <div class="bt-mini-card c-gp">
           <div class="bt-mini-label">${_t('bt_gatepass')}</div>
@@ -8173,13 +8176,13 @@ function btRenderEvening(){
   }).join('');
 
   const t = document.getElementById('bt-eve-total');
-  if(t){ let tot=0; BT_DATA.buses.forEach(b=>tot+=b.evening||0); t.textContent=tot; }
+  if(t){ let tot=0; BT_DATA.buses.forEach(b=>{ tot+=b.evening||0; tot+=b.parentEvening||0; }); t.textContent=tot; }
   const tc = document.getElementById('bt-tab-eve-cnt');
   if(tc){
     const todayStr = btTodayStr();
     const gpCnt = (typeof GS !== 'undefined' && GS.passes)
       ? GS.passes.filter(p => p.date === todayStr).length : 0;
-    let eTot=0; BT_DATA.buses.forEach(b=>eTot+=b.evening||0);
+    let eTot=0; BT_DATA.buses.forEach(b=>{ eTot+=b.evening||0; eTot+=b.parentEvening||0; });
     const eveTotal = eTot + gpCnt;
     let mTot=0; BT_DATA.buses.forEach(b=>{ mTot+=b.morning||0; mTot+=b.parentMorning||0; });
     const isOver = mTot > 0 && eveTotal > mTot;
@@ -8197,11 +8200,11 @@ function btRenderSummary(){
   const sum = document.getElementById('bt-summary');
   const sumEve = document.getElementById('bt-summary-eve');
   if(!sum && !sumEve) return;
-  let mBus=0, eBus=0, mExp=0, eExp=0, mParBus=0;
+  let mBus=0, eBus=0, mExp=0, eExp=0, mParBus=0, eParBus=0;
   BT_DATA.buses.forEach(b=>{
     mBus += b.morning||0; eBus += b.evening||0;
     mExp += b.expected||0; eExp += b.eveExpected||0;
-    mParBus += b.parentMorning||0;
+    mParBus += b.parentMorning||0; eParBus += b.parentEvening||0;
   });
   const mPar = mParBus;
   const mTotal = mBus + mPar;
@@ -8211,7 +8214,7 @@ function btRenderSummary(){
   const totalGP = (typeof GS !== 'undefined' && GS.passes)
     ? GS.passes.filter(p => p.date === today).length
     : 0;
-  const eTotal = eBus + totalGP;
+  const eTotal = eBus + eParBus + totalGP;
 
   // Morning tab — show only morning total, no evening comparison
   const mornHTML = `
@@ -8234,7 +8237,7 @@ function btRenderSummary(){
       <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${mBus} + 👪${mPar})</span>
     </div>
     <div class="bt-sum-item">${_t('bt_evening_lbl')}: <b>${eTotal}</b>${eExp?`/<span style="color:var(--sub)">${eExp}</span>`:''}
-      <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${eBus}${gpNote})</span>
+      <span style="font-size:10px;color:var(--mut);margin-left:3px">(🚌${eBus} + 👪${eParBus}${gpNote})</span>
     </div>
     <div class="bt-sum-item" style="${matchClass};font-weight:800">${matchStr}</div>
   `;
@@ -8246,7 +8249,7 @@ function btCheckMatch(){
   const banner = document.getElementById('bt-match-banner');
   const mornBanner = document.getElementById('bt-morn-banner');
   let mT=0, eT=0;
-  BT_DATA.buses.forEach(b=>{ mT+=b.morning||0; mT+=b.parentMorning||0; eT+=b.evening||0; });
+  BT_DATA.buses.forEach(b=>{ mT+=b.morning||0; mT+=b.parentMorning||0; eT+=b.evening||0; eT+=b.parentEvening||0; });
 
   // Total gatepass count — directly from today's GS.passes (no bus filter needed)
   const today = btTodayStr();
@@ -8547,7 +8550,7 @@ function btAddBus(){
   const name = (inp?.value||'').trim();
   if(!name){ btToast(_t('js_enter_bus'),'err'); return; }
   if(BT_DATA.buses.find(b=>b.name===name)){ btToast(_t('js_bus_exists'),'err'); return; }
-  BT_DATA.buses.push({name, morning:0, expected:0, parentMorning:0, evening:0, eveExpected:0, eveShifted:false, shiftTo:[], shiftFrom:[]});
+  BT_DATA.buses.push({name, morning:0, expected:0, parentMorning:0, evening:0, parentEvening:0, eveExpected:0, eveShifted:false, shiftTo:[], shiftFrom:[]});
   if(inp) inp.value='';
   btSave(); btRender();
   btToast(_t('js_bus_added'));
@@ -8565,8 +8568,7 @@ function homeUpdateBusTally(){
   try {
     const buses = BT_DATA.buses||[];
     let mTot=0, eTot=0;
-    buses.forEach(b=>{ mTot+=b.morning||0; mTot+=b.parentMorning||0; eTot+=b.evening||0; });
-    // parent drop removed from evening
+    buses.forEach(b=>{ mTot+=b.morning||0; mTot+=b.parentMorning||0; eTot+=b.evening||0; eTot+=b.parentEvening||0; });
     if(mTot===0 && eTot===0){ el.textContent=_t('js_students_today'); return; }
     el.textContent = `🌅 ${mTot} morning · 🌆 ${eTot} evening`;
   } catch(e){ el.textContent=_t('js_students_today'); }
@@ -8616,16 +8618,19 @@ async function btSendTelegram(){
       lines.push(row);
     } else {
       const c   = bus.evening||0;
-      grandTotal += c;
+      const pc2 = bus.parentEvening||0;
+      const tot2 = c + pc2;
+      grandTotal += tot2;
       const shiftToE  = bus.shiftTo   || [];
       const shiftFrE  = bus.shiftFrom || [];
       const shiftOut  = shiftToE.reduce((s,e)=>s+(e.count||0),0);
       const shiftIn   = shiftFrE.reduce((s,e)=>s+(e.count||0),0);
       // Bus-wise gatepass count
       const gpC = btGatepassCountForBus(bus.name);
-      let row = `🚌 *${bus.name}:* On Bus: ${c}`;
-      if(gpC > 0) row += ` (GP=${gpC}) | Total: ${c + gpC}`;
-      if(c===0 && !shiftIn && !shiftOut) row += ` _(absent)_`;
+      let row = `🚌 *${bus.name}:* On Bus: ${tot2}`;
+      if(pc2>0) row += ` _(Self: ${c}, Drop: ${pc2})_`;
+      if(gpC > 0) row += ` (GP=${gpC}) | Total: ${tot2 + gpC}`;
+      if(tot2===0 && !shiftIn && !shiftOut) row += ` _(absent)_`;
       lines.push(row);
       // Shift detail lines — who went where, how many
       shiftToE.filter(e=>e.count>0).forEach(e=>{
