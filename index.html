@@ -3290,7 +3290,7 @@ window.addEventListener('load', () => {
 function gLoadLocal(){
   try{
     const d=localStorage.getItem('gp_local');
-    if(d){const p=JSON.parse(d);if(p.students)GS.students=p.students;if(p.passes)GS.passes=p.passes;if(p.buses&&p.buses.length)GS.buses=p.buses;}
+    if(d){const p=JSON.parse(d);if(p.students)GS.students=p.students;if(p.passes)GS.passes=p.passes;if(p.buses&&p.buses.length)GS.buses=btSortBusNames(p.buses);}
   }catch{}
 }
 function gSaveLocal(){
@@ -3423,6 +3423,20 @@ function gStartGateoutStream(){
   _gGateoutES.onerror=()=>{};
 }
 
+// ── Natural bus-number sort: "Self" always first, then buses in ascending numeric order ──
+function btBusSortKey(name){
+  const n = String(name||'').trim();
+  if(n.toLowerCase()==='self') return -1;
+  const m = n.match(/\d+/);
+  return m ? parseInt(m[0],10) : Number.MAX_SAFE_INTEGER;
+}
+function btSortBusNames(arr){
+  return [...arr].sort((a,b)=> btBusSortKey(a)-btBusSortKey(b) || String(a).localeCompare(String(b)));
+}
+function btSortBusObjs(arr){
+  return [...arr].sort((a,b)=> btBusSortKey(a.name)-btBusSortKey(b.name) || String(a.name).localeCompare(String(b.name)));
+}
+
 // Buses & students are low-churn — one fetch per (re)connect is enough, no stream needed.
 async function gRefreshBusesAndStudents(){
   if(!gCfg.url||!gCfg.code)return;
@@ -3431,7 +3445,7 @@ async function gRefreshBusesAndStudents(){
       fetch(`${gCfg.url}/${gCfg.code}/buses.json`),
       fetch(`${gCfg.url}/${gCfg.code}/students.json`)
     ]);
-    if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=b.filter(x=>x&&String(x).trim());}
+    if(bR.ok){const b=await bR.json();if(b&&!b.__empty&&b.length)GS.buses=btSortBusNames(b.filter(x=>x&&String(x).trim()));}
     if(sR.ok){const s=await sR.json();if(Array.isArray(s)&&s.length)GS.students=s;}
     gSaveLocal();
     if(document.getElementById('g-set-ct')?.style.display!=='none')gRenderBuses();
@@ -7789,7 +7803,7 @@ function btLoad(){
       const p = JSON.parse(raw);
       if(p.date === today){
         // Defensive: strip out any buses with null/undefined/empty names
-        p.buses = (p.buses||[]).filter(b=>b&&b.name&&String(b.name).trim());
+        p.buses = btSortBusObjs((p.buses||[]).filter(b=>b&&b.name&&String(b.name).trim()));
         BT_DATA = p; return;
       }
     }
@@ -7809,6 +7823,7 @@ function btLoad(){
     busList = GS.buses.filter(b=>b&&String(b).trim())  // skip null/empty from Firebase
       .map(b=>({name:b,morning:0,expected:0,parentMorning:0,evening:0,parentEvening:0,eveExpected:0,eveShifted:false,shiftTo:[],shiftFrom:[]}));
   }
+  busList = btSortBusObjs(busList);
   BT_DATA = { buses:busList, parent:{morning:0,evening:0}, date:today };
   btSave();
 }
@@ -7970,7 +7985,7 @@ function btInit(){
     const before = BT_DATA.buses.length;
     BT_DATA.buses = BT_DATA.buses.filter(b=>b.name&&validBuses.includes(b.name));
     if(BT_DATA.buses.length !== before) changed = true;
-    if(changed){ btSave(); }
+    if(changed){ BT_DATA.buses = btSortBusObjs(BT_DATA.buses); btSave(); }
   }
   syncFromGS();
   // Set date badge (if element exists in current tab)
@@ -7995,7 +8010,7 @@ function btSyncAndRender(){
   const before = BT_DATA.buses.length;
   BT_DATA.buses = BT_DATA.buses.filter(b=>b.name&&validBuses.includes(b.name));
   if(BT_DATA.buses.length !== before) changed = true;
-  if(changed){ btSave(); btRenderMorning(); btRenderEvening(); btRenderSummary(); btCheckMatch(); }
+  if(changed){ BT_DATA.buses = btSortBusObjs(BT_DATA.buses); btSave(); btRenderMorning(); btRenderEvening(); btRenderSummary(); btCheckMatch(); }
 }
 
 // ── Render both columns ──
@@ -8551,6 +8566,7 @@ function btAddBus(){
   if(!name){ btToast(_t('js_enter_bus'),'err'); return; }
   if(BT_DATA.buses.find(b=>b.name===name)){ btToast(_t('js_bus_exists'),'err'); return; }
   BT_DATA.buses.push({name, morning:0, expected:0, parentMorning:0, evening:0, parentEvening:0, eveExpected:0, eveShifted:false, shiftTo:[], shiftFrom:[]});
+  BT_DATA.buses = btSortBusObjs(BT_DATA.buses);
   if(inp) inp.value='';
   btSave(); btRender();
   btToast(_t('js_bus_added'));
