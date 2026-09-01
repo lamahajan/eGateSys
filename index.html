@@ -3423,12 +3423,12 @@ function gStartGateoutStream(){
   _gGateoutES.onerror=()=>{};
 }
 
-// ── Natural bus-number sort: "Self" always first, then buses in ascending numeric order ──
+// ── Natural bus-number sort: buses in ascending numeric order, "Self" always last ──
 function btBusSortKey(name){
   const n = String(name||'').trim();
-  if(n.toLowerCase()==='self') return -1;
+  if(n.toLowerCase()==='self') return Number.MAX_SAFE_INTEGER;
   const m = n.match(/\d+/);
-  return m ? parseInt(m[0],10) : Number.MAX_SAFE_INTEGER;
+  return m ? parseInt(m[0],10) : Number.MAX_SAFE_INTEGER - 1;
 }
 function btSortBusNames(arr){
   return [...arr].sort((a,b)=> btBusSortKey(a)-btBusSortKey(b) || String(a).localeCompare(String(b)));
@@ -7931,6 +7931,7 @@ async function btFbPull(force){
     const remoteTs = remote._ts||0;
     if(remoteTs > localTs || force){
       BT_DATA = {...remote};
+      BT_DATA.buses = btSortBusObjs(BT_DATA.buses||[]);
       try{ localStorage.setItem(BT_KEY, JSON.stringify(BT_DATA)); }catch(e){}
       if(typeof btRenderMorning   ==='function') btRenderMorning();
       if(typeof btRenderEvening   ==='function') btRenderEvening();
@@ -8051,7 +8052,11 @@ function btRenderMorning(){
       <div style="font-size:11px;margin-top:3px">${_t('bt_add_one')}</div>
     </div>`; return;
   }
-  list.innerHTML = BT_DATA.buses.map((bus, idx)=>{
+  list.innerHTML = BT_DATA.buses.map((b,i)=>i).sort((a,b)=>
+    btBusSortKey(BT_DATA.buses[a].name)-btBusSortKey(BT_DATA.buses[b].name)
+    || String(BT_DATA.buses[a].name).localeCompare(String(BT_DATA.buses[b].name))
+  ).map((idx)=>{
+    const bus = BT_DATA.buses[idx];
     const count = bus.morning||0;
     const parMorn = bus.parentMorning||0;
     const total = count + parMorn;
@@ -8128,7 +8133,11 @@ function btRenderEvening(){
       <div style="font-size:12px;font-weight:700;color:var(--sub);margin-top:6px">${_t('bt_no_buses')}</div>
     </div>`; return;
   }
-  list.innerHTML = BT_DATA.buses.map((bus, idx)=>{
+  list.innerHTML = BT_DATA.buses.map((b,i)=>i).sort((a,b)=>
+    btBusSortKey(BT_DATA.buses[a].name)-btBusSortKey(BT_DATA.buses[b].name)
+    || String(BT_DATA.buses[a].name).localeCompare(String(BT_DATA.buses[b].name))
+  ).map((idx)=>{
+    const bus = BT_DATA.buses[idx];
     const isSelf = (bus.name||'').trim().toLowerCase() === 'self';
     const { count, parEve, total, expected, gpCount, gpVal, remaining } = btCalcEveRow(bus);
     const shifted = bus.eveShifted;
@@ -8396,7 +8405,8 @@ function btSetParent(type, val){
 // ── Bus Shift (evening) ──
 function btOpenShift(idx){
   const bus = BT_DATA.buses[idx];
-  const allBuses = BT_DATA.buses.map((b,i)=>({...b,idx:i})).filter((_,i)=>i!==idx);
+  const allBuses = BT_DATA.buses.map((b,i)=>({...b,idx:i})).filter((_,i)=>i!==idx)
+    .sort((a,b)=> btBusSortKey(a.name)-btBusSortKey(b.name) || String(a.name).localeCompare(String(b.name)));
   const modal = document.getElementById('bt-shift-modal');
   const content = document.getElementById('bt-shift-content');
   if(!modal||!content) return;
@@ -8619,7 +8629,7 @@ async function btSendTelegram(){
 
   let grandTotal = 0;
 
-  BT_DATA.buses.forEach(bus => {
+  BT_DATA.buses.slice().sort((a,b)=> btBusSortKey(a.name)-btBusSortKey(b.name) || String(a.name).localeCompare(String(b.name))).forEach(bus => {
     if(isMorn){
       const bc  = bus.morning||0;
       const pc  = bus.parentMorning||0;
