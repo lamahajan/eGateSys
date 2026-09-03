@@ -7611,11 +7611,22 @@ function btParseShiftVoice(text){
   return { fromIdx, toIdx, count };
 }
 
+// Chrome's hi-IN / pa-IN speech engines often transcribe spoken numbers
+// as Devanagari (१२) or Gurmukhi (੧੨) digit glyphs instead of ASCII "12" —
+// normalize those to plain digits before any number/bus-name matching.
+function btNormalizeDigits(text){
+  if(!text) return text;
+  return text
+    .replace(/[०-९]/g, d => String(d.charCodeAt(0) - 0x0966))
+    .replace(/[੦-੯]/g, d => String(d.charCodeAt(0) - 0x0A66));
+}
+
 // Resolves a spoken bus reference to an index in BT_DATA.buses.
 // Used by the step-by-step shift dialog, where each turn is just a
 // bare number ("12") or occasionally a named bus ("self") — not a
 // full sentence, so this is deliberately simpler than btFindBusMentions.
 function btResolveBusIndex(text){
+  text = btNormalizeDigits(text);
   const digitMatch = text.match(/\d+/);
   let digit = digitMatch ? digitMatch[0] : null;
   if(!digit){
@@ -7792,6 +7803,7 @@ function btVoiceListen(btn, onTranscript){
 // English number words, then a small Hindi number-word table.
 function btParseSpokenNumber(text){
   if(!text) return null;
+  text = btNormalizeDigits(text);
   const digitMatch = text.match(/\d+/);
   if(digitMatch) return parseInt(digitMatch[0], 10);
 
