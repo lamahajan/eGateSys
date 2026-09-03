@@ -7662,61 +7662,102 @@ function btParseYesNo(text){
 // applying it — one short answer per turn instead of one full sentence,
 // since that's easier to say and to recognize correctly, and the
 // confirmation step is a safety check before data actually changes.
+// Each step gets up to BT_VOICE_MAX_RETRIES automatic re-prompts on a
+// misheard/no-speech answer, instead of dying silently on the first miss.
+const BT_VOICE_MAX_RETRIES = 3;
+
 function btVoiceFloating(btn, tab){
-  const askFrom = ()=>{
+  const askFrom = (attempt=1)=>{
     btSpeak('Konsi bus se bacche shift honge?', ()=>{
-      btVoiceListen(btn, (transcript)=>{
-        const fromIdx = btResolveBusIndex(transcript);
+      btVoiceListen(btn, (transcript, alts)=>{
+        let fromIdx = null;
+        for(const alt of alts){ fromIdx = btResolveBusIndex(alt); if(fromIdx!==null) break; }
         if(fromIdx===null){
+          if(attempt >= BT_VOICE_MAX_RETRIES){
+            btToast('Bus baar-baar samajh nahi aayi — mic dobara dabayein', 'err');
+            btSpeak('Bus samajh nahi aayi, mic dobara dabayein');
+            return;
+          }
           btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
-          btSpeak('Bus samajh nahi aayi, dobara boliye', askFrom);
+          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askFrom(attempt+1));
           return;
         }
         btToast(`🎤 From: Bus ${btE(BT_DATA.buses[fromIdx].name)}`, 'ok');
         askTo(fromIdx);
+      }, ()=>{ // no speech / recognition error — retry, don't go dead
+        if(attempt >= BT_VOICE_MAX_RETRIES){
+          btToast('Sun nahi paya — mic dobara dabayein', 'err');
+          return;
+        }
+        btSpeak('Sun nahi paya, dobara boliye', ()=>askFrom(attempt+1));
       });
     });
   };
-  const askTo = (fromIdx)=>{
+  const askTo = (fromIdx, attempt=1)=>{
     btSpeak('Konsi bus mein jayenge?', ()=>{
-      btVoiceListen(btn, (transcript)=>{
-        const toIdx = btResolveBusIndex(transcript);
+      btVoiceListen(btn, (transcript, alts)=>{
+        let toIdx = null;
+        for(const alt of alts){ toIdx = btResolveBusIndex(alt); if(toIdx!==null) break; }
         if(toIdx===null){
+          if(attempt >= BT_VOICE_MAX_RETRIES){
+            btToast('Bus baar-baar samajh nahi aayi — mic dobara dabayein', 'err');
+            btSpeak('Bus samajh nahi aayi, mic dobara dabayein');
+            return;
+          }
           btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
-          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askTo(fromIdx));
+          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askTo(fromIdx, attempt+1));
           return;
         }
         if(toIdx===fromIdx){
           btToast('Same bus bol diya, dobara boliye', 'err');
-          btSpeak('Same bus bol diya, dobara boliye', ()=>askTo(fromIdx));
+          btSpeak('Same bus bol diya, dobara boliye', ()=>askTo(fromIdx, attempt+1));
           return;
         }
         btToast(`🎤 To: Bus ${btE(BT_DATA.buses[toIdx].name)}`, 'ok');
         askCount(fromIdx, toIdx);
+      }, ()=>{
+        if(attempt >= BT_VOICE_MAX_RETRIES){
+          btToast('Sun nahi paya — mic dobara dabayein', 'err');
+          return;
+        }
+        btSpeak('Sun nahi paya, dobara boliye', ()=>askTo(fromIdx, attempt+1));
       });
     });
   };
-  const askCount = (fromIdx, toIdx)=>{
+  const askCount = (fromIdx, toIdx, attempt=1)=>{
     btSpeak('Kitne bacche shift honge?', ()=>{
-      btVoiceListen(btn, (transcript)=>{
-        const count = btParseSpokenNumber(transcript);
+      btVoiceListen(btn, (transcript, alts)=>{
+        let count = null;
+        for(const alt of alts){ count = btParseSpokenNumber(alt); if(count!==null) break; }
         if(count===null){
+          if(attempt >= BT_VOICE_MAX_RETRIES){
+            btToast('Number baar-baar samajh nahi aaya — mic dobara dabayein', 'err');
+            btSpeak('Number samajh nahi aaya, mic dobara dabayein');
+            return;
+          }
           btToast(`🎤 Heard "${transcript.trim()}" — number samajh nahi aaya, dobara boliye`, 'err');
-          btSpeak('Number samajh nahi aaya, dobara boliye', ()=>askCount(fromIdx, toIdx));
+          btSpeak('Number samajh nahi aaya, dobara boliye', ()=>askCount(fromIdx, toIdx, attempt+1));
           return;
         }
         btToast(`🎤 Count: ${count}`, 'ok');
         askConfirm(fromIdx, toIdx, count);
+      }, ()=>{ // this is the step that used to silently die on timeout
+        if(attempt >= BT_VOICE_MAX_RETRIES){
+          btToast('Sun nahi paya — mic dobara dabayein', 'err');
+          return;
+        }
+        btSpeak('Sun nahi paya, dobara boliye', ()=>askCount(fromIdx, toIdx, attempt+1));
       });
     });
   };
-  const askConfirm = (fromIdx, toIdx, count)=>{
+  const askConfirm = (fromIdx, toIdx, count, attempt=1)=>{
     const fromName = BT_DATA.buses[fromIdx].name;
     const toName   = BT_DATA.buses[toIdx].name;
     btToast(`🎤 Bus ${btE(fromName)} → Bus ${btE(toName)}: ${count} bacche — confirm karein?`, 'ok');
     btSpeak(`Bus ${fromName} se bus ${toName} mein ${count} bacche shift, confirm karein?`, ()=>{
-      btVoiceListen(btn, (transcript)=>{
-        const yn = btParseYesNo(transcript);
+      btVoiceListen(btn, (transcript, alts)=>{
+        let yn = null;
+        for(const alt of alts){ yn = btParseYesNo(alt); if(yn!==null) break; }
         if(yn===true){
           btVoiceApplyShift(fromIdx, toIdx, count);
           return;
@@ -7726,8 +7767,18 @@ function btVoiceFloating(btn, tab){
           btSpeak('Cancel kar diya');
           return;
         }
+        if(attempt >= BT_VOICE_MAX_RETRIES){
+          btToast('Samajh nahi aaya — mic dobara dabayein', 'err');
+          return;
+        }
         btToast(`🎤 Heard "${transcript.trim()}" — haan ya nahi boliye`, 'err');
-        btSpeak('Samajh nahi aaya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count));
+        btSpeak('Samajh nahi aaya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count, attempt+1));
+      }, ()=>{
+        if(attempt >= BT_VOICE_MAX_RETRIES){
+          btToast('Sun nahi paya — mic dobara dabayein', 'err');
+          return;
+        }
+        btSpeak('Sun nahi paya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count, attempt+1));
       });
     });
   };
@@ -7809,7 +7860,7 @@ function btParseVoiceEntries(text){
   return entries;
 }
 
-function btVoiceListen(btn, onTranscript){
+function btVoiceListen(btn, onTranscript, onFail){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ btToast('Voice not supported in this browser — use Chrome','err'); return; }
   if(btn.classList.contains('bt-mic-listening')) return; // already listening
@@ -7818,7 +7869,10 @@ function btVoiceListen(btn, onTranscript){
   const langMap = BT_VOICE_LANG_MAP;
   rec.lang = langMap[btVoiceLangCode] || 'hi-IN'; // independent of UI language — hi-IN handles Hindi/Punjabi/English mixed speech best
   rec.interimResults = false;
-  rec.maxAlternatives = 1;
+  // Ask for several candidate transcriptions, not just the top guess —
+  // Indian-accented speech often has the right reading further down the
+  // list, so callers try each alternative in turn instead of trusting #1.
+  rec.maxAlternatives = 5;
 
   const origHtml = btn.innerHTML;
   btn.classList.add('bt-mic-listening');
@@ -7826,13 +7880,22 @@ function btVoiceListen(btn, onTranscript){
   const finish = ()=>{ btn.classList.remove('bt-mic-listening'); btn.innerHTML = origHtml; };
 
   rec.onresult = (e)=>{
-    const transcript = e.results[0][0].transcript || '';
+    const res = e.results[0];
+    const alts = [];
+    for(let i=0; i<res.length; i++) alts.push(res[i].transcript || '');
     finish();
-    onTranscript(transcript);
+    onTranscript(alts[0], alts);
   };
-  rec.onerror = ()=>{ finish(); btToast('Could not hear — try again', 'err'); };
+  rec.onerror = (e)=>{
+    finish();
+    // No speech heard / mic cut off mid-answer — previously this just
+    // showed a toast and the whole dialog silently died here. Let the
+    // caller retry the same question instead of going dead.
+    if(onFail) onFail(e && e.error);
+    else btToast('Could not hear — try again', 'err');
+  };
   rec.onend = finish;
-  try{ rec.start(); }catch(err){ finish(); }
+  try{ rec.start(); }catch(err){ finish(); if(onFail) onFail('start-failed'); }
 }
 
 // Extract a count from spoken text. Digits (what Chrome's hi-IN/pa-IN/en-IN
