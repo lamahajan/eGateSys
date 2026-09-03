@@ -7646,9 +7646,22 @@ function btResolveBusIndex(text){
   return best >= 0 ? best : null;
 }
 
+// Detects an affirmative/negative reply across Hindi/English/Punjabi —
+// used by the confirmation step at the end of the voice shift dialog.
+function btParseYesNo(text){
+  const t = (text||'').toLowerCase();
+  const yesRx = /\b(haan|han|ha|hanji|yes|yeah|ok|okay|theek|thik|sahi|karo|kardo|kar\s*do|confirm|sure|bilkul|ਹਾਂ|हाँ|हां)\b/;
+  const noRx  = /\b(nahi|nahin|na|no|nope|galat|cancel|ruk|ruko|ਨਹੀਂ|नहीं)\b/;
+  if(noRx.test(t)) return false;
+  if(yesRx.test(t)) return true;
+  return null;
+}
+
 // Step-by-step voice shift: ask which bus FROM, then which bus TO,
-// then how many kids — one short answer per turn instead of one
-// full sentence, since that's easier to say and to recognize correctly.
+// then how many kids, then a final yes/no confirmation before actually
+// applying it — one short answer per turn instead of one full sentence,
+// since that's easier to say and to recognize correctly, and the
+// confirmation step is a safety check before data actually changes.
 function btVoiceFloating(btn, tab){
   const askFrom = ()=>{
     btSpeak('Konsi bus se bacche shift honge?', ()=>{
@@ -7659,6 +7672,7 @@ function btVoiceFloating(btn, tab){
           btSpeak('Bus samajh nahi aayi, dobara boliye', askFrom);
           return;
         }
+        btToast(`🎤 From: Bus ${btE(BT_DATA.buses[fromIdx].name)}`, 'ok');
         askTo(fromIdx);
       });
     });
@@ -7677,6 +7691,7 @@ function btVoiceFloating(btn, tab){
           btSpeak('Same bus bol diya, dobara boliye', ()=>askTo(fromIdx));
           return;
         }
+        btToast(`🎤 To: Bus ${btE(BT_DATA.buses[toIdx].name)}`, 'ok');
         askCount(fromIdx, toIdx);
       });
     });
@@ -7690,7 +7705,29 @@ function btVoiceFloating(btn, tab){
           btSpeak('Number samajh nahi aaya, dobara boliye', ()=>askCount(fromIdx, toIdx));
           return;
         }
-        btVoiceApplyShift(fromIdx, toIdx, count);
+        btToast(`🎤 Count: ${count}`, 'ok');
+        askConfirm(fromIdx, toIdx, count);
+      });
+    });
+  };
+  const askConfirm = (fromIdx, toIdx, count)=>{
+    const fromName = BT_DATA.buses[fromIdx].name;
+    const toName   = BT_DATA.buses[toIdx].name;
+    btToast(`🎤 Bus ${btE(fromName)} → Bus ${btE(toName)}: ${count} bacche — confirm karein?`, 'ok');
+    btSpeak(`Bus ${fromName} se bus ${toName} mein ${count} bacche shift, confirm karein?`, ()=>{
+      btVoiceListen(btn, (transcript)=>{
+        const yn = btParseYesNo(transcript);
+        if(yn===true){
+          btVoiceApplyShift(fromIdx, toIdx, count);
+          return;
+        }
+        if(yn===false){
+          btToast('Shift cancel kar diya', 'err');
+          btSpeak('Cancel kar diya');
+          return;
+        }
+        btToast(`🎤 Heard "${transcript.trim()}" — haan ya nahi boliye`, 'err');
+        btSpeak('Samajh nahi aaya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count));
       });
     });
   };
