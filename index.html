@@ -1867,7 +1867,6 @@ body.dark {
           </div>
           <div id="bt-morn-banner" style="display:none;margin:12px 14px 0;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--mono);text-align:center;border:1.5px solid var(--bt-grn);background:var(--bt-grn-l);color:var(--bt-grn)"></div>
           <button class="bt-save-btn" onclick="btManualSave()">💾 <span data-i18n="btn_save_morning">Save Morning Data</span></button>
-          <button type="button" class="bt-mic-fab" onclick="btVoiceFloating(this,'morn')" title="Voice input"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         </div>
 
         <!-- ── Evening Bus Tally tab (inside GatePass) ── -->
@@ -7527,8 +7526,8 @@ function btGetBestVoice(langCode){
 }
 
 // Speak text back to staff (2-way voice)
-function btSpeak(text){
-  if(!text || !('speechSynthesis' in window)) return;
+function btSpeak(text, onend){
+  if(!text || !('speechSynthesis' in window)){ if(onend) onend(); return; }
   try{
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -7538,8 +7537,9 @@ function btSpeak(text){
     if(voice) u.voice = voice;
     u.rate = 0.95;
     u.pitch = 1;
+    if(onend){ u.onend = onend; u.onerror = onend; }
     window.speechSynthesis.speak(u);
-  }catch(e){}
+  }catch(e){ if(onend) onend(); }
 }
 
 function btVoiceFill(btn){ // still used by the shift-modal mic button
@@ -7611,46 +7611,79 @@ function btParseShiftVoice(text){
   return { fromIdx, toIdx, count };
 }
 
-function btVoiceFloating(btn, tab){
-  btVoiceListen(btn, (transcript)=>{
-    const shift = btParseShiftVoice(transcript);
-    if(shift){
-      btVoiceApplyShift(shift.fromIdx, shift.toIdx, shift.count);
-      return;
-    }
-    const entries = btParseVoiceEntries(transcript);
-    if(!entries.length){
-      btToast(`🎤 Heard "${transcript.trim()}" — couldn't understand, try again`, 'err');
-      btSpeak('Samajh nahi aaya, dobara boliye');
-      return;
-    }
-    const spokenParts = [];
-    const toastParts  = [];
-    entries.forEach(({idx, count, isParent})=>{
-      const bus = BT_DATA.buses[idx];
-      const isSelfBus = String(bus.name||'').trim().toLowerCase()==='self';
-      let input, fieldLabel, spokenField;
-      if(tab==='morn'){
-        if(isSelfBus || isParent){ input = document.getElementById(`btmc-par-${idx}`); fieldLabel='Parent Drop'; spokenField='parent se'; }
-        else { input = document.getElementById(`btmc-inp-${idx}`); fieldLabel='Arrived'; spokenField='aaye'; }
-      } else {
-        input = document.getElementById(`btec-inp-${idx}`); fieldLabel='On Bus'; spokenField='bus mein';
-      }
-      if(!input) return;
-      input.value = count;
-      input.dispatchEvent(new Event('input',  {bubbles:true}));
-      input.dispatchEvent(new Event('change', {bubbles:true}));
-      toastParts.push(`${btE(bus.name)} → ${fieldLabel}: ${count}`);
-      spokenParts.push(`bus ${bus.name} mein ${count} ${spokenField}`);
-    });
-    if(!toastParts.length){
-      btToast(`🎤 Heard "${transcript.trim()}" — couldn't match to a bus`, 'err');
-      btSpeak('Bus samajh nahi aayi, dobara boliye');
-      return;
-    }
-    btToast(`🎤 ${toastParts.join(' | ')}`, 'ok');
-    btSpeak(spokenParts.join('. '));
+// Resolves a spoken bus reference to an index in BT_DATA.buses.
+// Used by the step-by-step shift dialog, where each turn is just a
+// bare number ("12") or occasionally a named bus ("self") — not a
+// full sentence, so this is deliberately simpler than btFindBusMentions.
+function btResolveBusIndex(text){
+  const digitMatch = text.match(/\d+/);
+  let digit = digitMatch ? digitMatch[0] : null;
+  if(!digit){
+    const num = btParseSpokenNumber(text);
+    if(num !== null) digit = String(num);
+  }
+  if(digit){
+    const idx = BT_DATA.buses.findIndex(b => String(b.name||'').trim().toLowerCase() === digit);
+    if(idx >= 0) return idx;
+  }
+  const lower = text.toLowerCase();
+  let best = -1, bestLen = 0;
+  BT_DATA.buses.forEach((b,i)=>{
+    const name = String(b.name||'').trim().toLowerCase();
+    if(name && lower.includes(name) && name.length > bestLen){ best = i; bestLen = name.length; }
   });
+  return best >= 0 ? best : null;
+}
+
+// Step-by-step voice shift: ask which bus FROM, then which bus TO,
+// then how many kids — one short answer per turn instead of one
+// full sentence, since that's easier to say and to recognize correctly.
+function btVoiceFloating(btn, tab){
+  const askFrom = ()=>{
+    btSpeak('Konsi bus se bacche shift honge?', ()=>{
+      btVoiceListen(btn, (transcript)=>{
+        const fromIdx = btResolveBusIndex(transcript);
+        if(fromIdx===null){
+          btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
+          btSpeak('Bus samajh nahi aayi, dobara boliye', askFrom);
+          return;
+        }
+        askTo(fromIdx);
+      });
+    });
+  };
+  const askTo = (fromIdx)=>{
+    btSpeak('Konsi bus mein jayenge?', ()=>{
+      btVoiceListen(btn, (transcript)=>{
+        const toIdx = btResolveBusIndex(transcript);
+        if(toIdx===null){
+          btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
+          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askTo(fromIdx));
+          return;
+        }
+        if(toIdx===fromIdx){
+          btToast('Same bus bol diya, dobara boliye', 'err');
+          btSpeak('Same bus bol diya, dobara boliye', ()=>askTo(fromIdx));
+          return;
+        }
+        askCount(fromIdx, toIdx);
+      });
+    });
+  };
+  const askCount = (fromIdx, toIdx)=>{
+    btSpeak('Kitne bacche shift honge?', ()=>{
+      btVoiceListen(btn, (transcript)=>{
+        const count = btParseSpokenNumber(transcript);
+        if(count===null){
+          btToast(`🎤 Heard "${transcript.trim()}" — number samajh nahi aaya, dobara boliye`, 'err');
+          btSpeak('Number samajh nahi aaya, dobara boliye', ()=>askCount(fromIdx, toIdx));
+          return;
+        }
+        btVoiceApplyShift(fromIdx, toIdx, count);
+      });
+    });
+  };
+  askFrom();
 }
 
 // Finds every "bus <number>" style reference in a sentence (handles
