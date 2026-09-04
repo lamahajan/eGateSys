@@ -1269,7 +1269,11 @@ body.dark {
 .bt-bus-label {
   display:flex; align-items:center; gap:10px; margin-bottom:14px;
 }
-.bt-bus-emoji { font-size:22px; }
+.bt-bus-emoji {
+  font-size:16px; width:34px; height:34px; min-width:34px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--card); border:1.5px solid var(--bdr2);
+}
 .bt-bus-name { font-weight:800; font-size:16px; color:var(--txt); flex:1; }
 .bt-bus-status {
   font-family:var(--mono); font-size:11px; font-weight:700;
@@ -1386,7 +1390,11 @@ body.dark {
 .bt-bus-card.over { border-color: var(--bt-red); background: var(--bt-red-l); }
 .bt-bus-card.shifted { border-color: var(--amber); background: var(--amber-l); }
 .bt-bus-label { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
-.bt-bus-emoji { font-size:20px; }
+.bt-bus-emoji {
+  font-size:14px; width:30px; height:30px; min-width:30px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--card); border:1.5px solid var(--bdr2);
+}
 .bt-bus-name { font-weight:800; font-size:15px; color:var(--txt); flex:1; min-width:0; }
 .bt-bus-status {
   font-family:var(--mono); font-size:11px; font-weight:700;
@@ -3496,6 +3504,7 @@ function gGoTab(n,btn){
   }
   if(n==='evening'){
     _btActiveTab='eve'; btFbLoadCfg(); btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch();
+    btAnnounceShifts();
     if(_btFbCfg.url&&_btFbCfg.code){
       btFbPull(true).then(()=>{ btRenderEvening(); btRenderSummary(); btCheckMatch(); });
     }
@@ -7767,6 +7776,41 @@ function btCalcEveRow(bus){
   const gpVal    = gpCount !== null ? gpCount : 0;
   const remaining = expected > 0 ? expected - total - gpVal : null;
   return { count, parEve, total, mornBase, expected, gpCount, gpVal, remaining, shiftOut, shiftIn };
+}
+
+// ── Voice announcement — reads out evening shift moves ──
+function btSpeakText(text){
+  try{
+    if(!('speechSynthesis' in window) || !text) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const langMap = { en:'en-IN', hi:'hi-IN', pa:'pa-IN' };
+    u.lang = langMap[window.LANG] || 'en-IN';
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+function btAnnounceShifts(){
+  if(!('speechSynthesis' in window)) return;
+  const entries = [];
+  (BT_DATA.buses||[]).forEach(b=>{
+    (b.shiftTo||[]).forEach(e=>{
+      if(e.count>0) entries.push({ from:b.name, to:e.toName, count:e.count });
+    });
+  });
+  if(!entries.length) return;
+
+  const lang = window.LANG || 'en';
+  let text;
+  if(lang==='hi'){
+    text = entries.map(e=>`बस ${e.from} से बस ${e.to} में ${e.count} बच्चे गए`).join('। ') + '।';
+  } else if(lang==='pa'){
+    text = entries.map(e=>`ਬੱਸ ${e.from} ਤੋਂ ਬੱਸ ${e.to} ਵਿੱਚ ${e.count} ਬੱਚੇ ਗਏ`).join('। ') + '।';
+  } else {
+    text = entries.map(e=>`${e.count} student${e.count>1?'s':''} went from bus ${e.from} to bus ${e.to}`).join('. ') + '.';
+  }
+  btSpeakText(text);
 }
 
 function btRenderEvening(){
