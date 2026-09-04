@@ -6113,8 +6113,8 @@ const _T = {
     bt_shift_q:       'क्या',
     bt_shift_q2:      'के किसी छात्र ने दूसरी बस ली?',
     bt_shift_desc:    'क्या किसी छात्र की शाम की बस बदली? नई बस असाइन करें।',
-    bt_from_bus:      'किस बस से?',
-    bt_to_bus:        'किस बस में?',
+    bt_from_bus:      'किस बस से बच्चे गए?',
+    bt_to_bus:        'किस बस में बच्चे गए?',
     bt_dest_bus:      'गंतव्य बस',
     bt_how_many:      'कितने बच्चे शिफ्ट हुए?',
     bt_apply_shift:   '🔄 शिफ्ट लागू करें',
@@ -8205,6 +8205,7 @@ function btShiftFlowApply(){
   const { fromBus, destBus, actual } = btApplyShiftDirect(btShiftFlow.fromIdx, btShiftFlow.destIdx, count);
   document.getElementById('bt-shift-modal').style.display='none';
   btToast(`${actual} student(s) shifted: ${btE(fromBus.name)} → ${btE(destBus.name)} ✅`,'ok');
+  btSpeakText(`बस नंबर ${fromBus.name} से बस नंबर ${destBus.name} में ${actual} बच्चे गए`, 'hi');
 }
 
 function btOpenShift(idx){
