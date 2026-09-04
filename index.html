@@ -1462,18 +1462,6 @@ body.dark {
   border-radius:20px; background:var(--amber-l); color:var(--amber);
   font-size:11px; font-weight:800; font-family:var(--sans); margin-bottom:10px;
 }
-.bt-voice-lang-row {
-  display:flex; align-items:center; gap:6px; margin-bottom:12px;
-}
-.bt-voice-lang-label {
-  font-size:10px; font-weight:700; color:var(--mut); text-transform:uppercase; letter-spacing:.5px;
-}
-.bt-voice-lang-pill {
-  padding:4px 11px; border-radius:20px; font-size:11px; font-weight:700;
-  border:1.5px solid var(--bdr2); background:var(--card); color:var(--sub);
-  cursor:pointer; font-family:var(--sans);
-}
-.bt-voice-lang-pill.active { background:var(--amber); border-color:var(--amber); color:#fff; }
 
 /* ── Mini card grids ── */
 .bt-mini-grid {
@@ -6128,7 +6116,7 @@ const _T = {
     bt_from_bus:      'किस बस से?',
     bt_to_bus:        'किस बस में?',
     bt_dest_bus:      'गंतव्य बस',
-    bt_how_many:      'कितने छात्र शिफ्ट हुए?',
+    bt_how_many:      'कितने बच्चे शिफ्ट हुए?',
     bt_apply_shift:   '🔄 शिफ्ट लागू करें',
     bt_close:         'बंद करें',
     bt_shift_entries: 'शिफ्ट एंट्री',
@@ -7791,26 +7779,49 @@ function btCalcEveRow(bus){
 
 // ── Voice announcement — reads out evening shift moves ──
 // ── Voice — reads out each step's question when the shift page opens ──
-function btGetVoiceLang(){
-  const saved = localStorage.getItem('bt_voice_lang');
-  if(saved) return saved;
-  // Punjabi TTS voices are rarely available on most devices, so default to
-  // Hindi (much better voice support) unless the person picks otherwise.
-  return window.LANG === 'pa' ? 'hi' : (window.LANG || 'en');
+// Voice is locked to Hindi — Punjabi/English TTS voices are unreliable on
+// most devices and Hindi reads bus numbers and counts the clearest.
+function btGetVoiceLang(){ return 'hi'; }
+
+// Some devices/browsers have no Hindi voice installed at all — in that case
+// setting utterance.lang alone stays silent. Find an actual installed voice,
+// so it's clear whether one exists.
+function btPickVoice(langCode){
+  if(!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  if(!voices.length) return null;
+  const pfx = { en:'en', hi:'hi', pa:'pa' }[langCode] || 'hi';
+  return voices.find(v => v.lang && v.lang.toLowerCase() === `${pfx}-in`)
+      || voices.find(v => v.lang && v.lang.toLowerCase().startsWith(pfx))
+      || null;
 }
-function btSetVoiceLang(lang){
-  localStorage.setItem('bt_voice_lang', lang);
-}
+
 function btSpeakText(text, lang){
+  if(!('speechSynthesis' in window) || !text) return;
   try{
-    if(!('speechSynthesis' in window) || !text) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const wantLang = lang || btGetVoiceLang();
+    const voice = btPickVoice(wantLang);
+
     const langMap = { en:'en-IN', hi:'hi-IN', pa:'pa-IN' };
-    u.lang = langMap[lang || btGetVoiceLang()] || 'en-IN';
-    u.rate = 0.95;
-    window.speechSynthesis.speak(u);
+    // cancel() is async on several Android/Chrome builds — speaking again
+    // in the very same tick can get silently dropped, so give it a beat.
+    window.speechSynthesis.cancel();
+    setTimeout(()=>{
+      try{
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = langMap[wantLang] || 'hi-IN';
+        if(voice) u.voice = voice;
+        u.rate = 0.95;
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+    }, 60);
   }catch(e){}
+}
+// Voice lists load asynchronously on many browsers — warm the cache early
+// so the first announcement can already find a matching voice.
+if('speechSynthesis' in window){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = ()=>{ window.speechSynthesis.getVoices(); };
 }
 
 function btRenderEvening(){
@@ -8107,31 +8118,12 @@ function btShiftFlowBusGrid(excludeIdx){
     .join('');
 }
 
-// Small EN / HI / PA switcher for the spoken announcements only — separate
-// from the app's display language, since Punjabi TTS voices are often
-// missing or sound off on many devices.
-function btVoiceLangPillsHtml(){
-  const cur = btGetVoiceLang();
-  const opts = [['en','EN'],['hi','हिं'],['pa','ਪੰ']];
-  return `<div class="bt-voice-lang-row">
-    <span class="bt-voice-lang-label">🔊</span>
-    ${opts.map(([code,label])=>`<button type="button" class="bt-voice-lang-pill ${cur===code?'active':''}" onclick="btShiftFlowSetVoiceLang('${code}')">${label}</button>`).join('')}
-  </div>`;
-}
-
-function btShiftFlowSetVoiceLang(lang){
-  btSetVoiceLang(lang);
-  if(btShiftFlow.destIdx!=null) btShiftFlowRenderCount();
-  else if(btShiftFlow.fromIdx!=null) btShiftFlowRenderTo();
-  else btShiftFlowRenderFrom();
-}
-
 function btShiftFlowRenderFrom(){
   const modal = document.getElementById('bt-shift-modal');
   const content = document.getElementById('bt-shift-content');
   if(!modal||!content) return;
   const _s = _T[window.LANG] || _T.en;
-  const _v = _T[btGetVoiceLang()] || _T.en;
+  const _v = _T.hi;
 
   if(!BT_DATA.buses.length){
     content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--mut);font-size:13px">${_s.bt_no_buses}</div>`;
@@ -8140,14 +8132,13 @@ function btShiftFlowRenderFrom(){
   }
 
   content.innerHTML = `
-    ${btVoiceLangPillsHtml()}
     <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;font-family:var(--sans)">
       ${_s.bt_from_bus}
     </div>
     <div class="bt-dial-grid">${btShiftFlowBusGrid(null)}</div>
   `;
   modal.style.display = 'flex';
-  btSpeakText(_v.bt_from_bus);
+  btSpeakText(_v.bt_from_bus, 'hi');
 }
 
 function btShiftFlowPickFrom(idx){
@@ -8160,19 +8151,18 @@ function btShiftFlowRenderTo(){
   const content = document.getElementById('bt-shift-content');
   if(!modal||!content) return;
   const _s = _T[window.LANG] || _T.en;
-  const _v = _T[btGetVoiceLang()] || _T.en;
+  const _v = _T.hi;
   const fromBus = BT_DATA.buses[btShiftFlow.fromIdx];
 
   content.innerHTML = `
     <button type="button" class="bt-dial-back" onclick="btShiftFlowRenderFrom()">← ${btE(fromBus.name)}</button>
-    ${btVoiceLangPillsHtml()}
     <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;font-family:var(--sans)">
       ${_s.bt_to_bus}
     </div>
     <div class="bt-dial-grid">${btShiftFlowBusGrid(btShiftFlow.fromIdx)}</div>
   `;
   modal.style.display = 'flex';
-  btSpeakText(_v.bt_to_bus);
+  btSpeakText(_v.bt_to_bus, 'hi');
 }
 
 function btShiftFlowPickTo(idx){
@@ -8185,13 +8175,12 @@ function btShiftFlowRenderCount(){
   const content = document.getElementById('bt-shift-content');
   if(!modal||!content) return;
   const _s = _T[window.LANG] || _T.en;
-  const _v = _T[btGetVoiceLang()] || _T.en;
+  const _v = _T.hi;
   const fromBus = BT_DATA.buses[btShiftFlow.fromIdx];
   const destBus = BT_DATA.buses[btShiftFlow.destIdx];
 
   content.innerHTML = `
     <button type="button" class="bt-dial-back" onclick="btShiftFlowRenderTo()">← ${btE(destBus.name)}</button>
-    ${btVoiceLangPillsHtml()}
     <div class="bt-dial-from-chip">${btE(fromBus.name)} → ${btE(destBus.name)}</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}</label>
@@ -8206,7 +8195,7 @@ function btShiftFlowRenderCount(){
   `;
   modal.style.display = 'flex';
   document.getElementById('bt-shift-flow-count')?.focus();
-  btSpeakText(_v.bt_how_many);
+  btSpeakText(_v.bt_how_many, 'hi');
 }
 
 function btShiftFlowApply(){
