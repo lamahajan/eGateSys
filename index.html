@@ -8205,7 +8205,8 @@ function btShiftFlowApply(){
   const { fromBus, destBus, actual } = btApplyShiftDirect(btShiftFlow.fromIdx, btShiftFlow.destIdx, count);
   document.getElementById('bt-shift-modal').style.display='none';
   btToast(`${actual} student(s) shifted: ${btE(fromBus.name)} → ${btE(destBus.name)} ✅`,'ok');
-  btSpeakText(`बस नंबर ${fromBus.name} से बस नंबर ${destBus.name} में ${actual} बच्चे गए`, 'hi');
+  const _childWord = actual===1 ? 'बच्चा गया' : 'बच्चे गए';
+  btSpeakText(`बस नंबर ${fromBus.name} से बस नंबर ${destBus.name} में ${actual} ${_childWord}`, 'hi');
 }
 
 function btOpenShift(idx){
