@@ -3504,7 +3504,6 @@ function gGoTab(n,btn){
   }
   if(n==='evening'){
     _btActiveTab='eve'; btFbLoadCfg(); btLoad(); btRenderEvening(); btRenderSummary(); btCheckMatch();
-    btAnnounceShifts();
     if(_btFbCfg.url&&_btFbCfg.code){
       btFbPull(true).then(()=>{ btRenderEvening(); btRenderSummary(); btCheckMatch(); });
     }
@@ -7779,6 +7778,7 @@ function btCalcEveRow(bus){
 }
 
 // ── Voice announcement — reads out evening shift moves ──
+// ── Voice — reads out each step's question when the shift page opens ──
 function btSpeakText(text){
   try{
     if(!('speechSynthesis' in window) || !text) return;
@@ -7789,28 +7789,6 @@ function btSpeakText(text){
     u.rate = 0.95;
     window.speechSynthesis.speak(u);
   }catch(e){}
-}
-
-function btAnnounceShifts(){
-  if(!('speechSynthesis' in window)) return;
-  const entries = [];
-  (BT_DATA.buses||[]).forEach(b=>{
-    (b.shiftTo||[]).forEach(e=>{
-      if(e.count>0) entries.push({ from:b.name, to:e.toName, count:e.count });
-    });
-  });
-  if(!entries.length) return;
-
-  const lang = window.LANG || 'en';
-  let text;
-  if(lang==='hi'){
-    text = entries.map(e=>`बस ${e.from} से बस ${e.to} में ${e.count} बच्चे गए`).join('। ') + '।';
-  } else if(lang==='pa'){
-    text = entries.map(e=>`ਬੱਸ ${e.from} ਤੋਂ ਬੱਸ ${e.to} ਵਿੱਚ ${e.count} ਬੱਚੇ ਗਏ`).join('। ') + '।';
-  } else {
-    text = entries.map(e=>`${e.count} student${e.count>1?'s':''} went from bus ${e.from} to bus ${e.to}`).join('. ') + '.';
-  }
-  btSpeakText(text);
 }
 
 function btRenderEvening(){
@@ -8126,6 +8104,7 @@ function btShiftFlowRenderFrom(){
     <div class="bt-dial-grid">${btShiftFlowBusGrid(null)}</div>
   `;
   modal.style.display = 'flex';
+  btSpeakText(_s.bt_from_bus);
 }
 
 function btShiftFlowPickFrom(idx){
@@ -8148,6 +8127,7 @@ function btShiftFlowRenderTo(){
     <div class="bt-dial-grid">${btShiftFlowBusGrid(btShiftFlow.fromIdx)}</div>
   `;
   modal.style.display = 'flex';
+  btSpeakText(_s.bt_to_bus);
 }
 
 function btShiftFlowPickTo(idx){
@@ -8179,6 +8159,7 @@ function btShiftFlowRenderCount(){
   `;
   modal.style.display = 'flex';
   document.getElementById('bt-shift-flow-count')?.focus();
+  btSpeakText(_s.bt_how_many);
 }
 
 function btShiftFlowApply(){
