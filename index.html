@@ -1421,44 +1421,39 @@ body.dark {
   font-weight:700; text-align:center; outline:none;
 }
 .bt-exp-inp:focus { border-color:var(--bt-acc); color:var(--txt); }
-/* Voice mic button (shift modal) */
-.bt-mic-btn {
-  width:22px; height:22px; min-width:22px; border-radius:50%;
-  border:1.5px solid var(--bt-acc-b, var(--bdr2)); background:var(--card);
-  color:var(--bt-acc, var(--sub)); font-size:11px; line-height:1; cursor:pointer;
-  display:inline-flex; align-items:center; justify-content:center; padding:0;
-  transition:all .15s;
-}
-.bt-mic-btn:hover { background:var(--bt-acc-l); }
-.bt-mic-btn.bt-mic-listening,
-.bt-mic-fab.bt-mic-listening {
-  background:#dc2626; border-color:#dc2626; color:#fff;
-  animation: btMicPulse 1s infinite;
-}
-@keyframes btMicPulse {
-  0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.5); }
-  50% { box-shadow:0 0 0 8px rgba(220,38,38,0); }
-}
 
-/* Floating common voice button — bottom-left */
-.bt-mic-fab {
+/* Floating shift button — bottom-right (same slot as the old mic FAB) */
+.bt-shift-fab {
   position:fixed; right:16px; bottom:88px; z-index:250;
   width:52px; height:52px; border-radius:50%;
-  background:var(--bt-acc, #2563eb); color:#fff; border:none;
+  background:var(--amber, #d97706); color:#fff; border:none;
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 4px 14px rgba(0,0,0,.28); cursor:pointer;
 }
-.bt-mic-fab:active { transform:scale(.94); }
-@media (min-width:769px) { .bt-mic-fab { bottom:24px; } }
+.bt-shift-fab:active { transform:scale(.94); }
+@media (min-width:769px) { .bt-shift-fab { bottom:24px; } }
 
-/* Shift button in evening */
-.bt-shift-btn {
-  width:100%; margin-top:6px; padding:5px 8px; border-radius:7px;
-  border:1px dashed var(--amber); background:none; color:var(--amber);
-  font-size:10px; font-weight:700; cursor:pointer; font-family:var(--sans);
-  display:flex; align-items:center; justify-content:center; gap:4px;
+/* Dialpad-style bus picker grid (from / to steps) */
+.bt-dial-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:4px;
 }
-.bt-shift-btn:hover { background:var(--amber-l); }
+.bt-dial-btn {
+  padding:14px 6px; border-radius:12px; border:1.5px solid var(--bdr2);
+  background:var(--card); color:var(--txt); font-family:var(--sans);
+  font-size:13px; font-weight:700; cursor:pointer; transition:all .12s;
+}
+.bt-dial-btn:hover { border-color:var(--amber); background:var(--amber-l); }
+.bt-dial-back {
+  margin-bottom:12px; padding:6px 10px; border-radius:8px; border:none;
+  background:none; color:var(--sub); font-family:var(--sans); font-size:12px;
+  font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px;
+}
+.bt-dial-back:hover { color:var(--txt); }
+.bt-dial-from-chip {
+  display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+  border-radius:20px; background:var(--amber-l); color:var(--amber);
+  font-size:11px; font-weight:800; font-family:var(--sans); margin-bottom:10px;
+}
 
 /* ── Mini card grids ── */
 .bt-mini-grid {
@@ -1875,7 +1870,7 @@ body.dark {
           <div id="bt-evening-list"></div>
           <div id="bt-match-banner" style="display:none;margin:12px 14px 0;padding:10px 14px;border-radius:10px;border:1.5px solid;"></div>
           <button class="bt-save-btn" onclick="btManualSave()">💾 <span data-i18n="btn_save_evening">Save Evening Data</span></button>
-          <button type="button" class="bt-mic-fab" onclick="btVoiceFloating(this,'eve')" title="Voice input"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+          <button type="button" class="bt-shift-fab" onclick="btShiftFlowStart()" title="Shift students"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
         </div>
 
         <!-- Settings tab -->
@@ -1985,34 +1980,6 @@ body.dark {
                     <button type="button" onclick="gImportCfg()"
                       style="flex:1;padding:8px;background:var(--bg2);color:var(--text);border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">⬆️ Import</button>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- ── Voice Input ── -->
-            <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
-              <button type="button" onclick="gToggle('g-voice-body','g-voice-arrow')"
-                style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:none;border:none;cursor:pointer;text-align:left">
-                <div style="width:32px;height:32px;border-radius:9px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🎤</div>
-                <div style="flex:1">
-                  <div style="font-size:13px;font-weight:800;color:var(--text);font-family:var(--sans)">Voice Input</div>
-                  <div id="g-voice-status" style="font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:1px">Recognition language: HI</div>
-                </div>
-                <span id="g-voice-arrow" style="font-size:11px;color:var(--sub);transition:transform .2s;transform:rotate(90deg);flex-shrink:0">▶</span>
-              </button>
-              <div id="g-voice-body" style="padding:0 14px 14px;border-top:1px solid var(--border)">
-                <div style="height:10px"></div>
-                <div style="font-size:11px;color:var(--sub);font-family:var(--sans);line-height:1.5;margin-bottom:10px">
-                  Language used for the Bus Tally mic (independent of the app's display language). Hindi generally recognizes mixed Hindi/Punjabi/English speech best.
-                </div>
-                <label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:7px;font-family:var(--sans)">RECOGNITION LANGUAGE</label>
-                <div style="display:flex;gap:6px" id="g-voice-lang-btns">
-                  <button type="button" class="g-voice-lang-opt" data-lang="hi" onclick="gSetVoiceLang('hi')"
-                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🇮🇳 Hindi</button>
-                  <button type="button" class="g-voice-lang-opt" data-lang="en" onclick="gSetVoiceLang('en')"
-                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🇬🇧 English</button>
-                  <button type="button" class="g-voice-lang-opt" data-lang="pa" onclick="gSetVoiceLang('pa')"
-                    style="flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)">🌾 Punjabi</button>
                 </div>
               </div>
             </div>
@@ -5957,6 +5924,8 @@ const _T = {
     bt_shift_q:       'Did any students from',
     bt_shift_q2:      'board a different bus?',
     bt_shift_desc:    "Did a student's evening bus change? Assign the new bus.",
+    bt_from_bus:      'From which bus?',
+    bt_to_bus:        'To which bus?',
     bt_dest_bus:      'Destination Bus',
     bt_how_many:      'How many students shifted?',
     bt_apply_shift:   '🔄 Apply Shift',
@@ -6136,6 +6105,8 @@ const _T = {
     bt_shift_q:       'क्या',
     bt_shift_q2:      'के किसी छात्र ने दूसरी बस ली?',
     bt_shift_desc:    'क्या किसी छात्र की शाम की बस बदली? नई बस असाइन करें।',
+    bt_from_bus:      'किस बस से?',
+    bt_to_bus:        'किस बस में?',
     bt_dest_bus:      'गंतव्य बस',
     bt_how_many:      'कितने छात्र शिफ्ट हुए?',
     bt_apply_shift:   '🔄 शिफ्ट लागू करें',
@@ -6313,6 +6284,8 @@ const _T = {
     bt_shift_q:       'ਕੀ',
     bt_shift_q2:      'ਤੋਂ ਕੋਈ ਵਿਦਿਆਰਥੀ ਦੂਜੀ ਬੱਸ ਵਿੱਚ ਚੜ੍ਹਿਆ?',
     bt_shift_desc:    'ਕੀ ਕਿਸੇ ਵਿਦਿਆਰਥੀ ਦੀ ਸ਼ਾਮ ਦੀ ਬੱਸ ਬਦਲੀ? ਨਵੀਂ ਬੱਸ ਦੱਸੋ।',
+    bt_from_bus:      'ਕਿਹੜੀ ਬੱਸ ਤੋਂ?',
+    bt_to_bus:        'ਕਿਹੜੀ ਬੱਸ ਵਿੱਚ?',
     bt_dest_bus:      'ਮੰਜ਼ਿਲ ਬੱਸ',
     bt_how_many:      'ਕਿੰਨੇ ਵਿਦਿਆਰਥੀ ਬਦਲੇ?',
     bt_apply_shift:   '🔄 ਬਦਲੀ ਲਾਗੂ ਕਰੋ',
@@ -7456,479 +7429,6 @@ function btGoTab(tab, btn){
   _btActiveTab = tab;
 }
 
-// ══════════════════════════════════════════════════════════
-// ── Voice input (English / Hindi / Punjabi / mixed) ──
-// One floating mic button per tab. Staff can say one bus or several
-// in a single sentence, e.g. "bus 3 mein 25 aaye, bus 5 mein 15 aaye"
-// or "12 number de 3 bacche aap aaye" (parent drop). The app also
-// speaks the result back (2-way) so staff don't need to look at the screen.
-// ══════════════════════════════════════════════════════════
-
-// SVG icons (replace emoji)
-const BT_MIC_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
-const BT_MIC_ICON_SMALL = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
-const BT_MIC_ICON_LISTENING = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
-
-// Words/phrases that mean "parent drop" (self-dropped, not by bus)
-const BT_PARENT_RX = /\b(parents?|पेरेंट्?स?|अभिभावक|aap|आप|khud|खुद|apne\s*aap|अपने\s*आप|self\s*drop|खुद\s*आए)\b/i;
-
-// Voice recognition language — deliberately independent from the app's
-// display language (EN/HI/PA toggle). hi-IN gives the best real-world
-// accuracy for Hindi/Punjabi-accented mixed speech, so it's the default
-// regardless of what the UI is showing. Configurable from
-// Settings → Voice Input.
-let btVoiceLangCode = localStorage.getItem('bt_voice_lang') || 'hi';
-const BT_VOICE_LANG_MAP = { en:'en-IN', hi:'hi-IN', pa:'pa-IN' };
-
-function gRenderVoiceLangUI(){
-  document.querySelectorAll('.g-voice-lang-opt').forEach(b=>{
-    const active = b.dataset.lang === btVoiceLangCode;
-    b.style.background    = active ? 'var(--green)' : 'var(--bg2)';
-    b.style.color         = active ? '#fff' : 'var(--text)';
-    b.style.borderColor   = active ? 'var(--green)' : 'var(--border)';
-  });
-  const status = document.getElementById('g-voice-status');
-  if(status) status.textContent = 'Recognition language: ' + btVoiceLangCode.toUpperCase();
-}
-
-function gSetVoiceLang(lang){
-  btVoiceLangCode = lang;
-  localStorage.setItem('bt_voice_lang', lang);
-  gRenderVoiceLangUI();
-  btToast(`🎤 Voice language set to ${lang.toUpperCase()}`, 'ok');
-}
-
-function gVoiceLangInit(){ gRenderVoiceLangUI(); }
-if(document.readyState==='interactive' || document.readyState==='complete'){ gVoiceLangInit(); }
-else{ document.addEventListener('DOMContentLoaded', gVoiceLangInit); }
-
-// ── TTS voice selection ──
-// Browsers ship several voices per language; the default picked can be
-// a flat/robotic one. Cache the voice list and actively choose a proper
-// Indian voice for the target language instead of leaving it to chance.
-let btCachedVoices = [];
-function btLoadVoices(){ btCachedVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
-if('speechSynthesis' in window){
-  btLoadVoices();
-  window.speechSynthesis.onvoiceschanged = btLoadVoices;
-}
-
-function btGetBestVoice(langCode){
-  const target = BT_VOICE_LANG_MAP[langCode] || 'hi-IN';
-  const voices = btCachedVoices.length ? btCachedVoices : (window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
-  if(!voices.length) return null;
-  // Prefer a voice explicitly flagged as Indian/Hindi in its name
-  // (e.g. "Google हिन्दी", "Microsoft Swara Online (Natural) - Hindi (India)")
-  let match = voices.find(v => v.lang === target && /india|हिन्दी|hindi|swara|kalpana|heera|lekha/i.test(v.name));
-  if(!match) match = voices.find(v => v.lang === target);
-  if(!match) match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(target.slice(0,2).toLowerCase()));
-  return match || null;
-}
-
-// Speak text back to staff (2-way voice)
-function btSpeak(text, onend){
-  if(!text || !('speechSynthesis' in window)){ if(onend) onend(); return; }
-  try{
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    const target = BT_VOICE_LANG_MAP[btVoiceLangCode] || 'hi-IN';
-    u.lang = target;
-    const voice = btGetBestVoice(btVoiceLangCode);
-    if(voice) u.voice = voice;
-    u.rate = 0.95;
-    u.pitch = 1;
-    if(onend){ u.onend = onend; u.onerror = onend; }
-    window.speechSynthesis.speak(u);
-  }catch(e){ if(onend) onend(); }
-}
-
-function btVoiceFill(btn){ // still used by the shift-modal mic button
-  btVoiceListen(btn, (transcript)=>{
-    const num = btParseSpokenNumber(transcript);
-    if(num===null){ btToast(`🎤 Heard "${transcript.trim()}" — no number found, try again`,'err'); btSpeak('Number nahi mila, dobara boliye'); return; }
-    const targetId = btn.dataset.target;
-    const input = document.getElementById(targetId);
-    if(input){
-      input.value = num;
-      input.dispatchEvent(new Event('input',  {bubbles:true}));
-      input.dispatchEvent(new Event('change', {bubbles:true}));
-    }
-    btToast(`🎤 "${transcript.trim()}" → ${num}`, 'ok');
-    btSpeak(String(num));
-  });
-}
-
-// Common floating mic — identifies one or more buses + field + count
-// from a single sentence, applies all of them, then speaks a summary.
-// Parses a full shift sentence like "3 bacche 7 se 12 mein gaye" (or
-// "bus 7 se bus 12 mein 5 shift karo") into {fromIdx, toIdx, count}.
-// Requires both an explicit "<bus> se" (from) and "<bus> mein/ko" (to)
-// to trigger — otherwise returns null so normal on-bus parsing applies.
-// Words/phrases that signal shift intent, used as a gate for the
-// fallback matching below (so ordinary counting sentences don't
-// accidentally get treated as a shift).
-const BT_SHIFT_INTENT_RX = /\b(shift|se|gaye|gye|गए|गये|bhej|भेज|transfer|move|karo)\b/i;
-
-function btParseShiftVoice(text){
-  let fromIdx=null, toIdx=null;
-  const spans=[];
-
-  const fromM = text.match(/(\d+)\s*se\b/i);
-  if(fromM){
-    const digit = fromM[1];
-    const idx = BT_DATA.buses.findIndex(b=>String(b.name||'').trim().toLowerCase()===digit);
-    if(idx>=0){ fromIdx=idx; spans.push({start:fromM.index, end:fromM.index+fromM[0].length}); }
-  }
-  const toM = text.match(/(\d+)\s*(?:mein|main|me|m|में|ko|को)\b/i);
-  if(toM){
-    const digit = toM[1];
-    const idx = BT_DATA.buses.findIndex(b=>String(b.name||'').trim().toLowerCase()===digit);
-    if(idx>=0){ toIdx=idx; spans.push({start:toM.index, end:toM.index+toM[0].length}); }
-  }
-
-  // Fallback: "se"/"mein" wording didn't match cleanly, but the sentence
-  // clearly signals a shift and mentions two distinct buses — use the
-  // order they were spoken in as from → to.
-  if((fromIdx===null || toIdx===null) && BT_SHIFT_INTENT_RX.test(text)){
-    const mentions = btFindBusMentions(text);
-    const distinct = [];
-    mentions.forEach(m=>{ if(!distinct.some(d=>d.idx===m.idx)) distinct.push(m); });
-    if(distinct.length>=2){
-      if(fromIdx===null){ fromIdx=distinct[0].idx; spans.push({start:distinct[0].start,end:distinct[0].end}); }
-      if(toIdx===null){ toIdx=distinct[1].idx; spans.push({start:distinct[1].start,end:distinct[1].end}); }
-    }
-  }
-
-  if(fromIdx===null || toIdx===null || fromIdx===toIdx) return null;
-
-  spans.sort((a,b)=>a.start-b.start);
-  let remainder = text;
-  for(let i=spans.length-1; i>=0; i--){
-    remainder = remainder.slice(0, spans[i].start) + ' ' + remainder.slice(spans[i].end);
-  }
-  const count = btParseSpokenNumber(remainder);
-  if(count===null) return null;
-  return { fromIdx, toIdx, count };
-}
-
-// Chrome's hi-IN / pa-IN speech engines often transcribe spoken numbers
-// as Devanagari (१२) or Gurmukhi (੧੨) digit glyphs instead of ASCII "12" —
-// normalize those to plain digits before any number/bus-name matching.
-function btNormalizeDigits(text){
-  if(!text) return text;
-  return text
-    .replace(/[०-९]/g, d => String(d.charCodeAt(0) - 0x0966))
-    .replace(/[੦-੯]/g, d => String(d.charCodeAt(0) - 0x0A66));
-}
-
-// Resolves a spoken bus reference to an index in BT_DATA.buses.
-// Used by the step-by-step shift dialog, where each turn is just a
-// bare number ("12") or occasionally a named bus ("self") — not a
-// full sentence, so this is deliberately simpler than btFindBusMentions.
-function btResolveBusIndex(text){
-  text = btNormalizeDigits(text);
-  const digitMatch = text.match(/\d+/);
-  let digit = digitMatch ? digitMatch[0] : null;
-  if(!digit){
-    const num = btParseSpokenNumber(text);
-    if(num !== null) digit = String(num);
-  }
-  if(digit){
-    const idx = BT_DATA.buses.findIndex(b => String(b.name||'').trim().toLowerCase() === digit);
-    if(idx >= 0) return idx;
-  }
-  const lower = text.toLowerCase();
-  let best = -1, bestLen = 0;
-  BT_DATA.buses.forEach((b,i)=>{
-    const name = String(b.name||'').trim().toLowerCase();
-    if(name && lower.includes(name) && name.length > bestLen){ best = i; bestLen = name.length; }
-  });
-  return best >= 0 ? best : null;
-}
-
-// Detects an affirmative/negative reply across Hindi/English/Punjabi —
-// used by the confirmation step at the end of the voice shift dialog.
-function btParseYesNo(text){
-  const t = (text||'').toLowerCase();
-  const yesRx = /\b(haan|han|ha|hanji|yes|yeah|ok|okay|theek|thik|sahi|karo|kardo|kar\s*do|confirm|sure|bilkul|ਹਾਂ|हाँ|हां)\b/;
-  const noRx  = /\b(nahi|nahin|na|no|nope|galat|cancel|ruk|ruko|ਨਹੀਂ|नहीं)\b/;
-  if(noRx.test(t)) return false;
-  if(yesRx.test(t)) return true;
-  return null;
-}
-
-// Step-by-step voice shift: ask which bus FROM, then which bus TO,
-// then how many kids, then a final yes/no confirmation before actually
-// applying it — one short answer per turn instead of one full sentence,
-// since that's easier to say and to recognize correctly, and the
-// confirmation step is a safety check before data actually changes.
-// Each step gets up to BT_VOICE_MAX_RETRIES automatic re-prompts on a
-// misheard/no-speech answer, instead of dying silently on the first miss.
-const BT_VOICE_MAX_RETRIES = 3;
-
-function btVoiceFloating(btn, tab){
-  const askFrom = (attempt=1)=>{
-    btSpeak('Konsi bus se bacche shift honge?', ()=>{
-      btVoiceListen(btn, (transcript, alts)=>{
-        let fromIdx = null;
-        for(const alt of alts){ fromIdx = btResolveBusIndex(alt); if(fromIdx!==null) break; }
-        if(fromIdx===null){
-          if(attempt >= BT_VOICE_MAX_RETRIES){
-            btToast('Bus baar-baar samajh nahi aayi — mic dobara dabayein', 'err');
-            btSpeak('Bus samajh nahi aayi, mic dobara dabayein');
-            return;
-          }
-          btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
-          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askFrom(attempt+1));
-          return;
-        }
-        btToast(`🎤 From: Bus ${btE(BT_DATA.buses[fromIdx].name)}`, 'ok');
-        askTo(fromIdx);
-      }, ()=>{ // no speech / recognition error — retry, don't go dead
-        if(attempt >= BT_VOICE_MAX_RETRIES){
-          btToast('Sun nahi paya — mic dobara dabayein', 'err');
-          return;
-        }
-        btSpeak('Sun nahi paya, dobara boliye', ()=>askFrom(attempt+1));
-      });
-    });
-  };
-  const askTo = (fromIdx, attempt=1)=>{
-    btSpeak('Konsi bus mein jayenge?', ()=>{
-      btVoiceListen(btn, (transcript, alts)=>{
-        let toIdx = null;
-        for(const alt of alts){ toIdx = btResolveBusIndex(alt); if(toIdx!==null) break; }
-        if(toIdx===null){
-          if(attempt >= BT_VOICE_MAX_RETRIES){
-            btToast('Bus baar-baar samajh nahi aayi — mic dobara dabayein', 'err');
-            btSpeak('Bus samajh nahi aayi, mic dobara dabayein');
-            return;
-          }
-          btToast(`🎤 Heard "${transcript.trim()}" — bus samajh nahi aayi, dobara boliye`, 'err');
-          btSpeak('Bus samajh nahi aayi, dobara boliye', ()=>askTo(fromIdx, attempt+1));
-          return;
-        }
-        if(toIdx===fromIdx){
-          btToast('Same bus bol diya, dobara boliye', 'err');
-          btSpeak('Same bus bol diya, dobara boliye', ()=>askTo(fromIdx, attempt+1));
-          return;
-        }
-        btToast(`🎤 To: Bus ${btE(BT_DATA.buses[toIdx].name)}`, 'ok');
-        askCount(fromIdx, toIdx);
-      }, ()=>{
-        if(attempt >= BT_VOICE_MAX_RETRIES){
-          btToast('Sun nahi paya — mic dobara dabayein', 'err');
-          return;
-        }
-        btSpeak('Sun nahi paya, dobara boliye', ()=>askTo(fromIdx, attempt+1));
-      });
-    });
-  };
-  const askCount = (fromIdx, toIdx, attempt=1)=>{
-    btSpeak('Kitne bacche shift honge?', ()=>{
-      btVoiceListen(btn, (transcript, alts)=>{
-        let count = null;
-        for(const alt of alts){ count = btParseSpokenNumber(alt); if(count!==null) break; }
-        if(count===null){
-          if(attempt >= BT_VOICE_MAX_RETRIES){
-            btToast('Number baar-baar samajh nahi aaya — mic dobara dabayein', 'err');
-            btSpeak('Number samajh nahi aaya, mic dobara dabayein');
-            return;
-          }
-          btToast(`🎤 Heard "${transcript.trim()}" — number samajh nahi aaya, dobara boliye`, 'err');
-          btSpeak('Number samajh nahi aaya, dobara boliye', ()=>askCount(fromIdx, toIdx, attempt+1));
-          return;
-        }
-        btToast(`🎤 Count: ${count}`, 'ok');
-        askConfirm(fromIdx, toIdx, count);
-      }, ()=>{ // this is the step that used to silently die on timeout
-        if(attempt >= BT_VOICE_MAX_RETRIES){
-          btToast('Sun nahi paya — mic dobara dabayein', 'err');
-          return;
-        }
-        btSpeak('Sun nahi paya, dobara boliye', ()=>askCount(fromIdx, toIdx, attempt+1));
-      });
-    });
-  };
-  const askConfirm = (fromIdx, toIdx, count, attempt=1)=>{
-    const fromName = BT_DATA.buses[fromIdx].name;
-    const toName   = BT_DATA.buses[toIdx].name;
-    btToast(`🎤 Bus ${btE(fromName)} → Bus ${btE(toName)}: ${count} bacche — confirm karein?`, 'ok');
-    btSpeak(`Bus ${fromName} se bus ${toName} mein ${count} bacche shift, confirm karein?`, ()=>{
-      btVoiceListen(btn, (transcript, alts)=>{
-        let yn = null;
-        for(const alt of alts){ yn = btParseYesNo(alt); if(yn!==null) break; }
-        if(yn===true){
-          btVoiceApplyShift(fromIdx, toIdx, count);
-          return;
-        }
-        if(yn===false){
-          btToast('Shift cancel kar diya', 'err');
-          btSpeak('Cancel kar diya');
-          return;
-        }
-        if(attempt >= BT_VOICE_MAX_RETRIES){
-          btToast('Samajh nahi aaya — mic dobara dabayein', 'err');
-          return;
-        }
-        btToast(`🎤 Heard "${transcript.trim()}" — haan ya nahi boliye`, 'err');
-        btSpeak('Samajh nahi aaya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count, attempt+1));
-      }, ()=>{
-        if(attempt >= BT_VOICE_MAX_RETRIES){
-          btToast('Sun nahi paya — mic dobara dabayein', 'err');
-          return;
-        }
-        btSpeak('Sun nahi paya, haan ya nahi boliye', ()=>askConfirm(fromIdx, toIdx, count, attempt+1));
-      });
-    });
-  };
-  askFrom();
-}
-
-// Finds every "bus <number>" style reference in a sentence (handles
-// "bus 3", "बस 3", "3 number", "12 number de", "no 5", "नंबर 7",
-// and the common shorthand "18 mein 4 aaye" — a number directly
-// followed by mein/me/में implies a bus reference by context) and
-// returns them in the order they were spoken, with their position
-// in the text so the counts for each can be read from what follows it.
-function btFindBusMentions(text){
-  const rx = /(?:bus|बस|bas)\s*(?:no\.?|number|नंबर)?\s*(\d+)|(\d+)\s*(?:number|no\.?|नंबर)|(\d+)\s*(?:mein|main|me|m|में)\b/gi;
-  const found = [];
-  let m;
-  while((m = rx.exec(text)) !== null){
-    const digit = m[1] || m[2] || m[3];
-    if(!digit) continue;
-    const idx = BT_DATA.buses.findIndex(b=>{
-      const n = String(b.name||'').trim().toLowerCase();
-      return n===digit || n===('bus '+digit);
-    });
-    if(idx>=0) found.push({ idx, start:m.index, end:m.index+m[0].length });
-  }
-  if(found.length) return found;
-
-  // Fallback: no digit-style bus reference found — try matching a
-  // named bus (e.g. "Self") as a whole word, once.
-  const lower = text.toLowerCase();
-  let best=-1, bestLen=0, bestStart=-1;
-  BT_DATA.buses.forEach((b,i)=>{
-    const name = String(b.name||'').trim().toLowerCase();
-    if(name && lower.includes(name) && name.length>bestLen){
-      best=i; bestLen=name.length; bestStart=lower.indexOf(name);
-    }
-  });
-  if(best>=0) found.push({ idx:best, start:bestStart, end:bestStart+bestLen });
-  return found;
-}
-
-// Splits one sentence into per-bus entries: {idx, count, isParent}.
-// Each bus can carry TWO numbers — an "arrived" count and a "khud/
-// parent" count, e.g. "12 number mein 10 bacche aaye 2 khud aaye" →
-// arrived:10, parent:2. Every number found in a bus's segment is
-// checked against the text right after it (up to the next number)
-// for a parent keyword, so several buses AND both counts per bus
-// can be said in one sentence.
-function btParseVoiceEntries(text){
-  const mentions = btFindBusMentions(text);
-  if(!mentions.length) return [];
-  const entries = [];
-  for(let i=0; i<mentions.length; i++){
-    const seg = mentions[i];
-    const nextStart = i+1 < mentions.length ? mentions[i+1].start : text.length;
-    const payload = text.slice(seg.end, nextStart);
-
-    const numRx = /\d+/g;
-    const nums = [];
-    let nm;
-    while((nm = numRx.exec(payload)) !== null){
-      nums.push({ val: parseInt(nm[0], 10), start: nm.index, end: nm.index + nm[0].length });
-    }
-
-    if(!nums.length){
-      // No digits in this bus's segment — fall back to word-number parsing (single value only)
-      const c = btParseSpokenNumber(payload);
-      if(c !== null) entries.push({ idx:seg.idx, count:c, isParent: BT_PARENT_RX.test(payload) });
-      continue;
-    }
-    for(let j=0; j<nums.length; j++){
-      const n = nums[j];
-      const ctxEnd = j+1 < nums.length ? nums[j+1].start : payload.length;
-      const context = payload.slice(n.end, ctxEnd);
-      const isParent = BT_PARENT_RX.test(context);
-      entries.push({ idx:seg.idx, count:n.val, isParent });
-    }
-  }
-  return entries;
-}
-
-function btVoiceListen(btn, onTranscript, onFail){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ btToast('Voice not supported in this browser — use Chrome','err'); return; }
-  if(btn.classList.contains('bt-mic-listening')) return; // already listening
-
-  const rec = new SR();
-  const langMap = BT_VOICE_LANG_MAP;
-  rec.lang = langMap[btVoiceLangCode] || 'hi-IN'; // independent of UI language — hi-IN handles Hindi/Punjabi/English mixed speech best
-  rec.interimResults = false;
-  // Ask for several candidate transcriptions, not just the top guess —
-  // Indian-accented speech often has the right reading further down the
-  // list, so callers try each alternative in turn instead of trusting #1.
-  rec.maxAlternatives = 5;
-
-  const origHtml = btn.innerHTML;
-  btn.classList.add('bt-mic-listening');
-  btn.innerHTML = BT_MIC_ICON_LISTENING;
-  const finish = ()=>{ btn.classList.remove('bt-mic-listening'); btn.innerHTML = origHtml; };
-
-  rec.onresult = (e)=>{
-    const res = e.results[0];
-    const alts = [];
-    for(let i=0; i<res.length; i++) alts.push(res[i].transcript || '');
-    finish();
-    onTranscript(alts[0], alts);
-  };
-  rec.onerror = (e)=>{
-    finish();
-    // No speech heard / mic cut off mid-answer — previously this just
-    // showed a toast and the whole dialog silently died here. Let the
-    // caller retry the same question instead of going dead.
-    if(onFail) onFail(e && e.error);
-    else btToast('Could not hear — try again', 'err');
-  };
-  rec.onend = finish;
-  try{ rec.start(); }catch(err){ finish(); if(onFail) onFail('start-failed'); }
-}
-
-// Extract a count from spoken text. Digits (what Chrome's hi-IN/pa-IN/en-IN
-// engines usually return for numbers) are tried first; falls back to common
-// English number words, then a small Hindi number-word table.
-function btParseSpokenNumber(text){
-  if(!text) return null;
-  text = btNormalizeDigits(text);
-  const digitMatch = text.match(/\d+/);
-  if(digitMatch) return parseInt(digitMatch[0], 10);
-
-  const words = text.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean);
-  const ones = {zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
-    eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19};
-  const tens = {twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
-  let total = null;
-  for(const w of words){
-    if(ones[w]!==undefined) total = (total||0) + ones[w];
-    else if(tens[w]!==undefined) total = (total||0) + tens[w];
-    else if(w==='hundred') total = (total||0) * 100 || 100;
-  }
-  if(total !== null) return total;
-
-  const hindiMap = {
-    'शून्य':0,'एक':1,'दो':2,'तीन':3,'चार':4,'पांच':5,'पाँच':5,'छह':6,'छः':6,'सात':7,'आठ':8,'नौ':9,'दस':10,
-    'ग्यारह':11,'बारह':12,'तेरह':13,'चौदह':14,'पंद्रह':15,'सोलह':16,'सत्रह':17,'अठारह':18,'उन्नीस':19,
-    'बीस':20,'तीस':30,'चालीस':40,'पचास':50,'साठ':60,'सत्तर':70,'अस्सी':80,'नब्बे':90,'सौ':100
-  };
-  for(const [k,v] of Object.entries(hindiMap)){
-    if(text.includes(k)) return v;
-  }
-  return null;
-}
 
 // ── State ──
 // BT_DATA = { buses: [{name, morning, expected, evening, eveExpected, eveShifted}],
@@ -8340,7 +7840,6 @@ function btRenderEvening(){
           <div class="bt-mini-disp" id="btec-rem-${idx}">${remText}</div>
         </div>
       </div>
-      <button class="bt-shift-btn" onclick="btOpenShift(${idx})">${_t('bt_shift_btn')}</button>
     </div>`;
   }).join('');
 
@@ -8547,7 +8046,106 @@ function btSetParent(type, val){
   homeUpdateBusTally();
 }
 
-// ── Bus Shift (evening) ──
+// ── Bus Shift (evening) — floating-button guided flow ──
+// Step 1: pick the "from" bus off a dialpad-style grid, step 2: pick the
+// "to" bus the same way, step 3: type how many students moved.
+let btShiftFlow = { fromIdx:null, destIdx:null };
+
+function btShiftFlowStart(){
+  btShiftFlow = { fromIdx:null, destIdx:null };
+  btShiftFlowRenderFrom();
+}
+
+function btShiftFlowBusGrid(excludeIdx){
+  return BT_DATA.buses.map((b,i)=>({...b,idx:i})).filter(b=>b.idx!==excludeIdx)
+    .sort((a,b)=> btBusSortKey(a.name)-btBusSortKey(b.name) || String(a.name).localeCompare(String(b.name)))
+    .map(b=>`<button type="button" class="bt-dial-btn" onclick="${excludeIdx===null?`btShiftFlowPickFrom(${b.idx})`:`btShiftFlowPickTo(${b.idx})`}">${btE(b.name)}</button>`)
+    .join('');
+}
+
+function btShiftFlowRenderFrom(){
+  const modal = document.getElementById('bt-shift-modal');
+  const content = document.getElementById('bt-shift-content');
+  if(!modal||!content) return;
+  const _s = _T[window.LANG] || _T.en;
+
+  if(!BT_DATA.buses.length){
+    content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--mut);font-size:13px">${_s.bt_no_buses}</div>`;
+    modal.style.display = 'flex';
+    return;
+  }
+
+  content.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;font-family:var(--sans)">
+      ${_s.bt_from_bus}
+    </div>
+    <div class="bt-dial-grid">${btShiftFlowBusGrid(null)}</div>
+  `;
+  modal.style.display = 'flex';
+}
+
+function btShiftFlowPickFrom(idx){
+  btShiftFlow.fromIdx = idx;
+  btShiftFlowRenderTo();
+}
+
+function btShiftFlowRenderTo(){
+  const modal = document.getElementById('bt-shift-modal');
+  const content = document.getElementById('bt-shift-content');
+  if(!modal||!content) return;
+  const _s = _T[window.LANG] || _T.en;
+  const fromBus = BT_DATA.buses[btShiftFlow.fromIdx];
+
+  content.innerHTML = `
+    <button type="button" class="bt-dial-back" onclick="btShiftFlowRenderFrom()">← ${btE(fromBus.name)}</button>
+    <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;font-family:var(--sans)">
+      ${_s.bt_to_bus}
+    </div>
+    <div class="bt-dial-grid">${btShiftFlowBusGrid(btShiftFlow.fromIdx)}</div>
+  `;
+  modal.style.display = 'flex';
+}
+
+function btShiftFlowPickTo(idx){
+  btShiftFlow.destIdx = idx;
+  btShiftFlowRenderCount();
+}
+
+function btShiftFlowRenderCount(){
+  const modal = document.getElementById('bt-shift-modal');
+  const content = document.getElementById('bt-shift-content');
+  if(!modal||!content) return;
+  const _s = _T[window.LANG] || _T.en;
+  const fromBus = BT_DATA.buses[btShiftFlow.fromIdx];
+  const destBus = BT_DATA.buses[btShiftFlow.destIdx];
+
+  content.innerHTML = `
+    <button type="button" class="bt-dial-back" onclick="btShiftFlowRenderTo()">← ${btE(destBus.name)}</button>
+    <div class="bt-dial-from-chip">${btE(fromBus.name)} → ${btE(destBus.name)}</div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}</label>
+      <input id="bt-shift-flow-count" type="number" min="1" value="1"
+        inputmode="numeric" pattern="[0-9]*"
+        style="width:100%;margin-top:5px;text-align:center;font-size:22px;font-weight:800;font-family:var(--mono);padding:8px;border-radius:9px;border:1.5px solid var(--bdr2);background:var(--card);color:var(--txt);outline:none">
+    </div>
+    <button onclick="btShiftFlowApply()"
+      style="width:100%;padding:11px;background:var(--amber);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans)">
+      ${_s.bt_apply_shift}
+    </button>
+  `;
+  modal.style.display = 'flex';
+  document.getElementById('bt-shift-flow-count')?.focus();
+}
+
+function btShiftFlowApply(){
+  const countInp = document.getElementById('bt-shift-flow-count');
+  const count = parseInt(countInp?.value)||0;
+  if(count<=0){ btToast('Enter valid values','err'); return; }
+  const { fromBus, destBus, actual } = btApplyShiftDirect(btShiftFlow.fromIdx, btShiftFlow.destIdx, count);
+  document.getElementById('bt-shift-modal').style.display='none';
+  btToast(`${actual} student(s) shifted: ${btE(fromBus.name)} → ${btE(destBus.name)} ✅`,'ok');
+}
+
 function btOpenShift(idx){
   const bus = BT_DATA.buses[idx];
   const allBuses = BT_DATA.buses.map((b,i)=>({...b,idx:i})).filter((_,i)=>i!==idx)
@@ -8568,7 +8166,7 @@ function btOpenShift(idx){
       </select>
     </div>
     <div style="margin-bottom:14px">
-      <label style="display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}<button type="button" class="bt-mic-btn" data-target="bt-shift-count" onclick="btVoiceFill(this)" title="Voice">${BT_MIC_ICON_SMALL}</button></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;font-family:var(--sans)">${_s.bt_how_many}</label>
       <input id="bt-shift-count" type="number" min="1" value="1"
         inputmode="numeric" pattern="[0-9]*"
         style="width:100%;margin-top:5px;text-align:center;font-size:22px;font-weight:800;font-family:var(--mono);padding:8px;border-radius:9px;border:1.5px solid var(--bdr2);background:var(--card);color:var(--txt);outline:none">
@@ -8703,14 +8301,6 @@ function btApplyShift(fromIdx){
   const { fromBus, destBus, actual } = btApplyShiftDirect(fromIdx, destIdx, count);
   document.getElementById('bt-shift-modal').style.display='none';
   btToast(`${actual} student(s) shifted: ${btE(fromBus.name)} → ${btE(destBus.name)} ✅`,'ok');
-}
-
-// Voice-driven shift — applies directly without needing the modal open,
-// so staff can say the whole thing in one sentence: "3 bacche 7 se 12 mein gaye"
-function btVoiceApplyShift(fromIdx, destIdx, count){
-  const { fromBus, destBus, actual } = btApplyShiftDirect(fromIdx, destIdx, count);
-  btToast(`🎤 ${btE(fromBus.name)} → ${btE(destBus.name)}: ${actual} shifted`, 'ok');
-  btSpeak(`bus ${fromBus.name} se bus ${destBus.name} mein ${actual} bacche shift ho gaye`);
 }
 
 
